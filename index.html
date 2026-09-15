@@ -301,8 +301,8 @@
         <h3>AI Buyer (Gemini)</h3>
         <div class="field">
           <label>Google Gemini API key</label>
-          <div class="desc">Powers live, unscripted buyers. Get a free key at aistudio.google.com → "Get API key". Stored only in your browser, never sent anywhere except Google.</div>
-          <input id="setKey" type="password" placeholder="AIza…">
+          <div class="desc">Powers live, unscripted buyers. Get one at aistudio.google.com → "Get API key". Both classic <b>AIza…</b> keys and Google's newer <b>AQ.…</b> keys are accepted — hit Test connection to confirm yours works. Stored only in your browser, never sent anywhere except Google.</div>
+          <input id="setKey" type="password" placeholder="AIza… or AQ.…">
         </div>
         <div class="field">
           <label>Model</label>
@@ -313,6 +313,11 @@
           <input type="checkbox" id="setRemember">
           <label>Remember my key on this device (auto-load next time)</label>
         </div>
+        <div class="savebar" style="margin-top:4px">
+          <button class="btn ghost" onclick="testGeminiKey()">Test connection</button>
+        </div>
+        <div id="aiStatus" style="display:none;font-size:12px;margin-top:11px;line-height:1.5;font-weight:600"></div>
+        <p class="note" style="margin-top:10px">Newer <b>AQ.</b> keys are stricter — if the test fails with a 401/403 "OAuth"/"ACCESS_TOKEN_TYPE_UNSUPPORTED" error, that key type can't be used by a browser app's key call. Generate a key that works with the REST <code>generateContent</code> method (or keep using the built-in Claude AI mode inside Claude.ai).</p>
       </div>
       <div class="sec">
         <h3>Data</h3>
@@ -368,7 +373,7 @@ const store={
   set(k,v){try{localStorage.setItem('mht_'+k,JSON.stringify(v))}catch(e){mem[k]=v}},
   del(k){try{localStorage.removeItem('mht_'+k)}catch(e){}delete mem[k]}
 };
-let settings = Object.assign({name:'',key:'',model:'gemini-2.0-flash',remember:false,autosave:true}, store.get('settings')||{});
+let settings = Object.assign({name:'',key:'',model:'gemini-2.0-flash',remember:false,autosave:true,authMode:'header'}, store.get('settings')||{});
 if(settings.remember){ const k=store.get('geminiKey'); if(k)settings.key=k; }
 
 /* ===================== DEEP DATA: INVENTORY ===================== */
@@ -754,19 +759,53 @@ async function aiReplyAnthropic(){
     if(!text)return null;return parseAI(text);
   }catch(e){return null}
 }
+/* Gemini supports 3 auth styles; AQ. keys often need a header, classic AIza keys work as ?key= */
+function geminiEndpoint(model,mode){
+  const base=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  return mode==='query'? base+`?key=${encodeURIComponent(settings.key)}` : base;
+}
+function geminiHeaders(mode){
+  const h={'Content-Type':'application/json'};
+  if(mode==='header')h['x-goog-api-key']=settings.key;
+  else if(mode==='bearer')h['Authorization']='Bearer '+settings.key;
+  return h;
+}
+function geminiPost(model,body,mode){
+  return fetch(geminiEndpoint(model,mode),{method:"POST",headers:geminiHeaders(mode),body:JSON.stringify(body)});
+}
 async function aiReplyGemini(){
   try{
     const model=settings.model||'gemini-2.0-flash';
-    const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(settings.key)}`;
     const contents=aiHistory.map(h=>({role:h.role==='user'?'user':'model',parts:[{text:h.content}]}));
     if(contents.length&&contents[0].role==='model')contents.unshift({role:'user',parts:[{text:'(start negotiation)'}]});
     const body={system_instruction:{parts:[{text:buyerSystem()}]},contents,generationConfig:{maxOutputTokens:300,temperature:0.9}};
-    const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-    if(!res.ok){toast('Gemini error '+res.status+' — using scripted');return null}
+    const res=await geminiPost(model,body,settings.authMode||'header');
+    if(!res.ok){toast('Gemini '+res.status+' — using scripted. Re-test your key in Settings.');return null}
     const data=await res.json();
     let text=(data.candidates?.[0]?.content?.parts||[]).map(p=>p.text).join('').trim();
     if(!text)return null;return parseAI(text);
   }catch(e){toast('AI unreachable — using scripted');return null}
+}
+function shortErr(t){try{const j=JSON.parse(t);return (j.error?.message||t).slice(0,150)}catch(e){return (t||'').slice(0,150)}}
+function setAiStatus(msg,ok){const el=$('aiStatus');if(!el)return;el.style.display='block';el.innerHTML=msg;
+  el.style.color= ok===true?'#14785c': ok===false?'#b04a3a':'#7a857f';}
+async function testGeminiKey(){
+  const key=$('setKey').value.trim();
+  if(!key){setAiStatus('Enter a key above first.',false);return}
+  settings.key=key;const model=$('setModel').value.trim()||'gemini-2.0-flash';
+  setAiStatus('Testing key…',null);
+  const body={contents:[{role:'user',parts:[{text:'ping'}]}],generationConfig:{maxOutputTokens:5}};
+  let last='';
+  for(const mode of ['header','query','bearer']){
+    try{
+      const res=await geminiPost(model,body,mode);
+      if(res.ok){settings.authMode=mode;saveSettings(true);
+        setAiStatus('✓ Key works — auth method: <b>'+mode+'</b>. Toggle "AI Buyer" on and go.',true);return;}
+      last=res.status+' — '+shortErr(await res.text());
+      if(res.status!==401&&res.status!==403){setAiStatus('✗ '+last,false);return}
+    }catch(e){last='blocked by browser (CORS/network): '+e.message}
+  }
+  setAiStatus('✗ Key rejected on all methods. Last error: '+last+'. This looks like a newer "AQ." key that a browser app can\'t authenticate with — see the note below.',false);
 }
 
 /* ===================== SCORING ===================== */
@@ -854,15 +893,15 @@ function loadSettingsUI(){
   $('setModel').value=settings.model||'gemini-2.0-flash';$('setRemember').checked=!!settings.remember;
   $('setAutosave').checked=settings.autosave!==false;applyAiSrc();applyAgent();$('aiToggle').checked=!!settings.aiOn;
 }
-function saveSettings(){
+function saveSettings(silent){
   settings.name=$('setName').value.trim();settings.key=$('setKey').value.trim();
   settings.model=$('setModel').value.trim()||'gemini-2.0-flash';settings.remember=$('setRemember').checked;
   settings.autosave=$('setAutosave').checked;
-  const toStore={name:settings.name,model:settings.model,remember:settings.remember,autosave:settings.autosave,aiOn:settings.aiOn};
+  const toStore={name:settings.name,model:settings.model,remember:settings.remember,autosave:settings.autosave,aiOn:settings.aiOn,authMode:settings.authMode};
   if(settings.autosave)store.set('settings',toStore); else store.del('settings');
   if(settings.remember&&settings.autosave)store.set('geminiKey',settings.key); else store.del('geminiKey');
   applyAiSrc();applyAgent();renderTemplates();
-  const ok=$('setOk');ok.style.display='inline';setTimeout(()=>ok.style.display='none',1600);toast('Settings saved ✓');
+  if(!silent){const ok=$('setOk');ok.style.display='inline';setTimeout(()=>ok.style.display='none',1600);toast('Settings saved ✓');}
 }
 function clearData(){['settings','geminiKey','session','templates'].forEach(k=>store.del(k));
   session.deals=0;session.margin=0;session.scores=[];customTpl=[];settings={name:'',key:'',model:'gemini-2.0-flash',remember:false,autosave:true};
