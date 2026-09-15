@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobi Hub · Trade Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#008069; --green-deep:#0f2e24; --green-mid:#14785c;
+    --bubble-out:#d9fdd3; --bubble-in:#fff; --chat-bg:#e8e2d9;
+    --ink:#1c2b26; --cream:#f6f4ee; --line:#e2ddd3; --tick:#53bdeb;
+    --gold:#d98a1f; --red:#b04a3a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:'Manrope',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 15% -10%,#173a2d 0%,#0c2018 55%,#081712 100%);
+    color:var(--ink);height:100vh;overflow:hidden}
+  .app{display:flex;flex-direction:column;height:100vh}
+  .stage{flex:1;display:flex;overflow:hidden;position:relative}
+
+  /* SIDEBAR */
+  .side{width:330px;flex-shrink:0;background:linear-gradient(180deg,#123024,#0c2018);
+    color:#dfeee7;padding:20px 18px 22px;display:flex;flex-direction:column;gap:15px;
+    border-right:1px solid rgba(255,255,255,.06);overflow-y:auto}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .mark{width:38px;height:38px;border-radius:11px;flex-shrink:0;
+    background:linear-gradient(135deg,#1fbf8f,#0c7a5b);display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#04120d;font-size:17px;box-shadow:0 6px 18px rgba(31,191,143,.25)}
+  .brand h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;color:#fff;line-height:1.05}
+  .brand span{font-size:11px;color:#7fb8a3;letter-spacing:.5px}
+  .agent{font-size:11px;color:#7fb8a3}.agent b{color:#cfe} 
+  .panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:13px}
+  .panel .lbl{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#67ab90;font-weight:700;margin-bottom:9px}
+  .scenario{display:flex;gap:10px;align-items:flex-start;padding:9px;border-radius:11px;cursor:pointer;
+    border:1px solid transparent;transition:.15s;margin-bottom:5px}
+  .scenario:hover{background:rgba(255,255,255,.05)}
+  .scenario.active{background:rgba(31,191,143,.13);border-color:rgba(31,191,143,.4)}
+  .scenario .av{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:13px}
+  .scenario .meta strong{display:block;font-size:13px;color:#eaf5f0;font-weight:700}
+  .scenario .meta small{font-size:10.5px;color:#8fc3ac;line-height:1.3}
+  .diff{font-size:9px;padding:1px 6px;border-radius:20px;font-weight:700;letter-spacing:.4px;margin-left:6px;vertical-align:middle}
+  .d-easy{background:#1e5c46;color:#8ff0cb}.d-mid{background:#5c4a1e;color:#f5d78f}.d-hard{background:#5c2620;color:#f2a99b}
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}
+  .stat b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#fff}
+  .stat span{font-size:9px;color:#7fb8a3}
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .toggle small{font-size:10.5px;color:#9fcdb9;line-height:1.35}
+  .switch{position:relative;width:42px;height:24px;flex-shrink:0}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:rgba(255,255,255,.16);border-radius:20px;transition:.2s;cursor:pointer}
+  .slider:before{content:"";position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + .slider{background:#1fbf8f}
+  .switch input:checked + .slider:before{transform:translateX(18px)}
+  .aisrc{font-size:10px;color:#67ab90;margin-top:6px}
+
+  /* CHAT */
+  .chatwrap{flex:1;display:flex;align-items:center;justify-content:center;padding:18px}
+  .phone{width:100%;max-width:460px;height:100%;max-height:820px;background:var(--chat-bg);
+    border-radius:18px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+    box-shadow:0 30px 80px rgba(0,0,0,.45);border:1px solid rgba(0,0,0,.2)}
+  .phone .texture{position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:radial-gradient(rgba(20,120,92,.05) 1.1px,transparent 1.1px);background-size:22px 22px}
+  .wa-head{background:var(--green);color:#fff;padding:9px 12px;display:flex;align-items:center;gap:10px;z-index:3}
+  .wa-head .av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+  .wa-head .who{flex:1;min-width:0}
+  .wa-head .who b{font-size:14px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wa-head .who span{font-size:11.5px;color:#cdeae0}
+  .hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;font-family:inherit;font-weight:700;font-size:14px;width:32px;height:32px;border-radius:50%;cursor:pointer;transition:.15s;flex-shrink:0}
+  .hbtn:hover{background:rgba(255,255,255,.3)}
+  .hbtn.stock{width:auto;border-radius:20px;padding:0 11px;font-size:12px}
+  .messages{flex:1;overflow-y:auto;padding:12px 11px 6px;display:flex;flex-direction:column;gap:3px;z-index:2}
+  .day{align-self:center;background:rgba(255,255,255,.85);color:#5b6b64;font-size:11px;padding:3px 12px;border-radius:8px;margin:6px 0 9px}
+  .sys{align-self:center;background:#fbf0c9;color:#7a5c12;font-size:11px;padding:5px 12px;border-radius:8px;margin:4px 0;text-align:center;max-width:88%;line-height:1.4}
+  .msg{max-width:82%;padding:6px 9px 5px;border-radius:9px;font-size:13.5px;line-height:1.38;position:relative;box-shadow:0 1px .5px rgba(0,0,0,.13);word-wrap:break-word;white-space:pre-wrap}
+  .msg.in{align-self:flex-start;background:var(--bubble-in);border-top-left-radius:2px}
+  .msg.out{align-self:flex-end;background:var(--bubble-out);border-top-right-radius:2px}
+  .msg .t{font-size:10px;color:#7f8c86;float:right;margin:6px 0 -2px 10px}
+  .msg.out .t{color:#5a8a6d}
+  .tick{color:var(--tick);font-weight:700;margin-left:1px}
+  .typing{align-self:flex-start;background:#fff;border-radius:9px;border-top-left-radius:2px;padding:9px 12px;box-shadow:0 1px .5px rgba(0,0,0,.13);display:none;margin:0 11px}
+  .typing.show{display:flex;gap:3px}
+  .typing i{width:7px;height:7px;background:#9aa8a1;border-radius:50%;animation:bl 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes bl{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  .chips{display:flex;gap:7px;padding:6px 10px 2px;flex-wrap:wrap;z-index:2}
+  .chip{background:#fff;border:1px solid #d6ddd8;color:#14785c;font-family:inherit;font-weight:600;font-size:12px;padding:6px 11px;border-radius:20px;cursor:pointer;transition:.12s;white-space:nowrap}
+  .chip:hover{background:#ecf7f1;border-color:#9fd3bd}
+  .inputbar{display:flex;align-items:flex-end;gap:8px;padding:7px 10px 10px;z-index:2}
+  .inputbar textarea{flex:1;resize:none;border:none;outline:none;border-radius:22px;padding:11px 15px;font-family:inherit;font-size:14px;background:#fff;max-height:92px;line-height:1.35;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+  .send{width:46px;height:46px;border-radius:50%;border:none;background:var(--green);color:#fff;font-size:20px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .send:hover{background:#00a884}.send:disabled{opacity:.4;cursor:not-allowed}
+  .drawer{position:absolute;inset:0;background:rgba(8,20,15,.55);z-index:20;display:none;align-items:flex-end}
+  .drawer.show{display:flex}
+  .drawer .sheet{width:100%;max-height:82%;background:var(--cream);border-radius:18px 18px 0 0;padding:15px 13px 16px;overflow-y:auto;animation:up .22s ease}
+  @keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:translateY(0);opacity:1}}
+  .drawer h3{font-family:'Bricolage Grotesque',sans-serif;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+  .drawer .x{cursor:pointer;font-size:22px;color:#8a958f;line-height:1}
+  .drawer p.hint{font-size:11.5px;color:#7a857f;margin:2px 0 11px}
+  .lot{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:8px}
+  .lot .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .lot .top b{font-size:13px;color:var(--ink)}
+  .lot .ask{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;color:var(--green-mid);font-size:14px;white-space:nowrap}
+  .lot .spec{font-size:11px;color:#5f6d66;margin:5px 0 8px;line-height:1.5}
+  .gtag{display:inline-block;font-size:10px;font-weight:700;color:#fff;padding:1px 7px;border-radius:5px;margin-right:5px}
+  .lot .row{display:flex;justify-content:space-between;align-items:center}
+  .lot .qty{font-size:11px;color:#8a958f}
+  .lot button{background:var(--green-mid);color:#fff;border:none;font-family:inherit;font-weight:700;font-size:11.5px;padding:6px 12px;border-radius:8px;cursor:pointer}
+  .lot button:hover{background:#0f6349}
+
+  /* GENERIC VIEWS (learn/templates/settings) */
+  .view{display:none;flex:1;overflow-y:auto;background:var(--cream);width:100%}
+  .view .wrap{max-width:760px;margin:0 auto;padding:26px 22px 60px}
+  .view h2.big{font-family:'Bricolage Grotesque',sans-serif;font-size:24px;color:#12201b;margin-bottom:3px}
+  .view p.lead{color:#5f6d66;font-size:13px;margin-bottom:18px}
+  .pills{display:flex;gap:7px;flex-wrap:wrap;position:sticky;top:0;background:var(--cream);padding:8px 0 12px;z-index:5;border-bottom:1px solid var(--line);margin-bottom:16px}
+  .pill{background:#fff;border:1px solid var(--line);color:#14785c;font-family:inherit;font-weight:600;font-size:12px;padding:6px 13px;border-radius:20px;cursor:pointer}
+  .pill:hover{background:#ecf7f1}
+  .sec{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px;scroll-margin-top:60px}
+  .sec h3{font-family:'Bricolage Grotesque',sans-serif;font-size:16px;color:#12201b;margin-bottom:8px}
+  .sec h4{font-size:13px;color:#14785c;margin:12px 0 4px;font-weight:700}
+  .sec p,.sec li{font-size:13px;line-height:1.6;color:#37423c}
+  .sec ul{list-style:none;margin:4px 0}
+  .sec li{padding:3px 0 3px 16px;position:relative}
+  .sec li:before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;background:#14785c;border-radius:50%}
+  .sec b{color:#12201b}
+  .term{display:grid;grid-template-columns:110px 1fr;gap:8px;padding:5px 0;border-bottom:1px solid #f0ede6;font-size:12.5px}
+  .term b{color:#14785c}
+  .note{font-size:11.5px;color:#8a857a;font-style:italic;margin-top:8px}
+  .grtable{width:100%;border-collapse:collapse;margin-top:6px}
+  .grtable td{font-size:12.5px;padding:5px 6px;border-bottom:1px solid #f0ede6;vertical-align:top}
+  .grtable td.g{font-weight:800;color:#14785c;white-space:nowrap}
+  details{border:1px solid var(--line);border-radius:10px;padding:0;margin-bottom:8px;background:#fff;overflow:hidden}
+  details summary{cursor:pointer;padding:11px 14px;font-weight:700;font-size:13px;color:#12201b;list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary:before{content:"＋ ";color:#14785c}
+  details[open] summary:before{content:"－ "}
+  details .a{padding:0 14px 12px;font-size:12.5px;line-height:1.6;color:#37423c}
+
+  /* TEMPLATES */
+  .tpltop{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .tpltop input{flex:1;min-width:160px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:13px}
+  .catrow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+  .tpl{border:1px solid var(--line);background:#fff;border-radius:12px;padding:13px 15px;margin-bottom:11px}
+  .tpl .h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px}
+  .tpl .h b{font-size:13.5px;color:#12201b}
+  .tpl .cat{font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#14785c;background:#e8f4ef;padding:2px 8px;border-radius:5px}
+  .tpl pre{white-space:pre-wrap;font-family:inherit;font-size:12.5px;line-height:1.55;color:#37423c;background:#faf9f5;border-radius:8px;padding:10px 12px}
+  .tpl .acts{display:flex;gap:8px;margin-top:9px}
+  .tpl .acts button{border:none;font-family:inherit;font-weight:700;font-size:12px;padding:6px 13px;border-radius:8px;cursor:pointer}
+  .bcopy{background:var(--green-mid);color:#fff}.bcopy:hover{background:#0f6349}
+  .bdel{background:#f2e4e1;color:#b04a3a}
+  .newtpl{border:1.5px dashed #cdd8d3;border-radius:12px;padding:15px;background:#fbfcfb}
+  .newtpl input,.newtpl select,.newtpl textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-family:inherit;font-size:13px;margin-bottom:9px}
+  .newtpl textarea{resize:vertical;min-height:90px;line-height:1.5}
+
+  /* SETTINGS */
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;font-weight:700;color:#12201b;margin-bottom:5px}
+  .field .desc{font-size:11.5px;color:#7a857f;margin-bottom:7px;line-height:1.5}
+  .field input,.field select{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13px}
+  .field.row2{display:flex;align-items:center;gap:10px}
+  .field.row2 input[type=checkbox]{width:auto}
+  .field.row2 label{margin:0}
+  .savebar{display:flex;gap:10px;align-items:center;margin-top:6px}
+  .btn{background:var(--green-mid);color:#fff;border:none;font-family:inherit;font-weight:700;font-size:14px;padding:11px 22px;border-radius:11px;cursor:pointer}
+  .btn:hover{background:#0f6349}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:#37423c}
+  .btn.danger{background:#f2e4e1;color:#b04a3a}
+  .ok{font-size:12px;color:#14785c;font-weight:700}
+
+  /* BOTTOM TABBAR */
+  .tabbar{display:flex;background:#0c2018;border-top:1px solid rgba(255,255,255,.07);flex-shrink:0}
+  .tabbar button{flex:1;background:none;border:none;color:#6f9d88;font-family:inherit;font-size:10.5px;font-weight:600;padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:.12s}
+  .tabbar button .ic{font-size:18px}
+  .tabbar button.active{color:#2fe0a8}
+
+  /* SCORE MODAL */
+  .modal{position:fixed;inset:0;background:rgba(8,20,15,.75);z-index:50;display:none;align-items:center;justify-content:center;padding:22px}
+  .modal.show{display:flex}
+  .card{background:var(--cream);border-radius:20px;max-width:430px;width:100%;padding:24px;text-align:center;animation:pop .25s ease;max-height:92vh;overflow-y:auto}
+  @keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+  .verdict{font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700}
+  .card h2{font-family:'Bricolage Grotesque',sans-serif;font-size:24px;margin:3px 0 2px}
+  .ring{width:112px;height:112px;margin:12px auto 4px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
+  .kpis{display:flex;gap:9px;margin:12px 0}
+  .kpi{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 5px}
+  .kpi b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:16px}
+  .kpi span{font-size:9.5px;color:#7a857f}
+  .coach{text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:14px}
+  .coach div{font-size:12.5px;line-height:1.5;padding:3px 0 3px 20px;position:relative;color:#3a453f}
+  .coach div:before{position:absolute;left:0;top:2px}
+  .coach div.good:before{content:"✅"}.coach div.bad:before{content:"⚠️"}
+  .coach div.info:before{content:"•";color:var(--green-mid);font-weight:800;left:5px;top:1px;font-size:15px}
+
+  .toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);background:#12201b;color:#eaf3ef;padding:9px 18px;border-radius:22px;font-size:13px;font-weight:600;z-index:80;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+
+  @media(max-width:820px){
+    .stage{flex-direction:column}
+    .side{width:100%;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:10px;padding:11px}
+    .side .brand,.side .agent{display:none}
+    .side .panel{min-width:210px;flex-shrink:0}
+    .chatwrap{padding:0}
+    .phone{border-radius:0;max-height:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="stage">
+
+    <!-- SIDEBAR (trade) -->
+    <aside class="side" id="side">
+      <div class="brand"><div class="mark">M</div>
+        <div><h1>Trade Trainer</h1><span>MOBI HUB · SALES DESK</span></div></div>
+      <div class="agent" id="agentline"></div>
+      <div class="panel"><div class="lbl">Pick a buyer</div><div id="scenarios"></div></div>
+      <div class="panel"><div class="lbl">This session</div>
+        <div class="stats">
+          <div class="stat"><b id="s-deals">0</b><span>DEALS</span></div>
+          <div class="stat"><b id="s-margin">$0</b><span>MARGIN</span></div>
+          <div class="stat"><b id="s-score">–</b><span>AVG</span></div>
+        </div></div>
+      <div class="panel toggle">
+        <div><b style="font-size:13px;color:#eaf5f0">AI Buyer</b>
+          <small>Live, unscripted haggling. Add a Gemini key in Settings to use it anywhere.</small>
+          <div class="aisrc" id="aisrc"></div></div>
+        <label class="switch"><input type="checkbox" id="aiToggle"><span class="slider"></span></label>
+      </div>
+    </aside>
+
+    <!-- CHAT (trade) -->
+    <main class="chatwrap" id="chatwrap">
+      <div class="phone">
+        <div class="texture"></div>
+        <div class="wa-head">
+          <div class="av" id="h-av">K</div>
+          <div class="who"><b id="h-name">Buyer</b><span id="h-status">online</span></div>
+          <button class="hbtn" title="Restart chat" onclick="restartDeal()">↻</button>
+          <button class="hbtn" title="Download chat" onclick="downloadChat()">⬇</button>
+          <button class="hbtn stock" onclick="openDrawer()">📦 Stock</button>
+        </div>
+        <div class="messages" id="messages"></div>
+        <div class="typing" id="typing"><i></i><i></i><i></i></div>
+        <div class="chips" id="chips"></div>
+        <div class="inputbar">
+          <textarea id="input" rows="1" placeholder="Type your reply…"></textarea>
+          <button class="send" id="send" onclick="sendMsg()">➤</button>
+        </div>
+        <div class="drawer" id="drawer"><div class="sheet">
+          <h3>My Stock <span class="x" onclick="closeDrawer()">×</span></h3>
+          <p class="hint">Tap "Quote this" to drop a stock line into chat, then set your price &amp; qty.</p>
+          <div id="lots"></div>
+        </div></div>
+      </div>
+    </main>
+
+    <!-- LEARN -->
+    <section class="view" id="view-learn"><div class="wrap">
+      <h2 class="big">Learn — B2B Device Trading</h2>
+      <p class="lead">Everything a Mobi Hub sales agent should know cold. Skim it, then go trade.</p>
+      <div class="pills" id="learnpills"></div>
+      <div id="learncontent"></div>
+    </div></section>
+
+    <!-- TEMPLATES -->
+    <section class="view" id="view-templates"><div class="wrap">
+      <h2 class="big">Message Templates</h2>
+      <p class="lead">Ready-to-send openers, offers and follow-ups. Personalise, copy, go. Build your own too.</p>
+      <div class="tpltop">
+        <input id="tplContact" placeholder="Contact name (fills {contact})" oninput="renderTemplates()">
+        <span style="font-size:11.5px;color:#7a857f">{me} = your name from Settings</span>
+      </div>
+      <div class="catrow" id="tplcats"></div>
+      <div id="tpllist"></div>
+      <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:16px;margin:22px 0 10px;color:#12201b">Create your own</h3>
+      <div class="newtpl">
+        <input id="ntTitle" placeholder="Template name (e.g. Intro to new supplier)">
+        <select id="ntCat"></select>
+        <textarea id="ntBody" placeholder="Message… use {contact}, {me}, {device}, {price}, {qty}, {spec} as placeholders"></textarea>
+        <button class="btn" onclick="addTemplate()">Save template</button>
+      </div>
+    </div></section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-settings"><div class="wrap">
+      <h2 class="big">Settings</h2>
+      <p class="lead">Your name, AI key and saved data — kept in this browser.</p>
+      <div class="sec">
+        <div class="field">
+          <label>Your name</label>
+          <div class="desc">Shown on the desk and used to sign templates ({me}).</div>
+          <input id="setName" placeholder="e.g. Dee">
+        </div>
+      </div>
+      <div class="sec">
+        <h3>AI Buyer (Gemini)</h3>
+        <div class="field">
+          <label>Google Gemini API key</label>
+          <div class="desc">Powers live, unscripted buyers. Get a free key at aistudio.google.com → "Get API key". Stored only in your browser, never sent anywhere except Google.</div>
+          <input id="setKey" type="password" placeholder="AIza…">
+        </div>
+        <div class="field">
+          <label>Model</label>
+          <div class="desc">Default works for most keys. Change only if Google updates model names.</div>
+          <input id="setModel" placeholder="gemini-2.0-flash">
+        </div>
+        <div class="field row2">
+          <input type="checkbox" id="setRemember">
+          <label>Remember my key on this device (auto-load next time)</label>
+        </div>
+      </div>
+      <div class="sec">
+        <h3>Data</h3>
+        <div class="field row2">
+          <input type="checkbox" id="setAutosave" checked>
+          <label>Auto-save my name, stats &amp; templates in this browser</label>
+        </div>
+        <div class="savebar" style="margin-top:10px">
+          <button class="btn danger" onclick="clearData()">Clear all saved data</button>
+        </div>
+      </div>
+      <div class="savebar">
+        <button class="btn" onclick="saveSettings()">Save settings</button>
+        <span class="ok" id="setOk" style="display:none">Saved ✓</span>
+      </div>
+      <p class="note" style="margin-top:14px">Note: browser saving &amp; the Gemini key work when you open or host this file yourself. In the in-app preview, storage may be sandboxed — use the built-in Claude AI mode there.</p>
+    </div></section>
+
+  </div>
+
+  <!-- BOTTOM TABS -->
+  <nav class="tabbar">
+    <button data-t="trade" class="active" onclick="showTab('trade')"><span class="ic">💬</span>Trade</button>
+    <button data-t="learn" onclick="showTab('learn')"><span class="ic">📚</span>Learn</button>
+    <button data-t="templates" onclick="showTab('templates')"><span class="ic">✉️</span>Templates</button>
+    <button data-t="settings" onclick="showTab('settings')"><span class="ic">⚙️</span>Settings</button>
+  </nav>
+</div>
+
+<div class="modal" id="modal"><div class="card">
+  <div class="verdict" id="v-label"></div>
+  <h2 id="v-title"></h2>
+  <div class="ring" id="ring"></div>
+  <div class="kpis">
+    <div class="kpi"><b id="k-units">0</b><span>UNITS</span></div>
+    <div class="kpi"><b id="k-price">$0</b><span>PRICE/UNIT</span></div>
+    <div class="kpi"><b id="k-margin">$0</b><span>MARGIN</span></div>
+  </div>
+  <div class="coach" id="coach"></div>
+  <div style="display:flex;gap:9px">
+    <button class="btn ghost" style="flex:1" onclick="restartDeal();closeModal()">Retry</button>
+    <button class="btn" style="flex:1" onclick="nextDeal()">Next deal →</button>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== STORAGE (browser auto-save, safe fallback) ===================== */
+const mem={};
+const store={
+  get(k){try{const v=localStorage.getItem('mht_'+k);return v?JSON.parse(v):(mem[k]??null)}catch(e){return mem[k]??null}},
+  set(k,v){try{localStorage.setItem('mht_'+k,JSON.stringify(v))}catch(e){mem[k]=v}},
+  del(k){try{localStorage.removeItem('mht_'+k)}catch(e){}delete mem[k]}
+};
+let settings = Object.assign({name:'',key:'',model:'gemini-2.0-flash',remember:false,autosave:true}, store.get('settings')||{});
+if(settings.remember){ const k=store.get('geminiKey'); if(k)settings.key=k; }
+
+/* ===================== DEEP DATA: INVENTORY ===================== */
+const INVENTORY=[
+  {id:'15pm',name:'iPhone 15 Pro Max 256GB',grade:'CPO',gc:'#14785c',spec:'EU spec',bh:'100%',lock:'Unlocked',qty:12,cost:860,ask:940,cat:'iPhone'},
+  {id:'15p',name:'iPhone 15 Pro 128GB',grade:'A+',gc:'#14785c',spec:'EU spec',bh:'90%+',lock:'Unlocked',qty:20,cost:690,ask:750,cat:'iPhone'},
+  {id:'14',name:'iPhone 14 128GB',grade:'AB',gc:'#3a7d5c',spec:'US spec (eSIM only)',bh:'85%+',lock:'Unlocked',qty:60,cost:385,ask:425,cat:'iPhone'},
+  {id:'13p',name:'iPhone 13 Pro 128GB',grade:'A',gc:'#3a7d5c',spec:'EU spec',bh:'88%+',lock:'Unlocked',qty:45,cost:425,ask:470,cat:'iPhone'},
+  {id:'13',name:'iPhone 13 128GB',grade:'A/AB',gc:'#3a7d5c',spec:'EU spec',bh:'87%+',lock:'Unlocked',qty:120,cost:300,ask:340,cat:'iPhone'},
+  {id:'12',name:'iPhone 12 64GB',grade:'B',gc:'#8a7d2e',spec:'Mixed spec',bh:'84%+',lock:'Unlocked',qty:90,cost:175,ask:205,cat:'iPhone'},
+  {id:'11c',name:'iPhone 11 64GB',grade:'C',gc:'#8a7d2e',spec:'Mixed spec',bh:'80%+',lock:'Unlocked',qty:70,cost:120,ask:145,cat:'iPhone'},
+  {id:'11a',name:'iPhone 11 64GB',grade:'ASIS',gc:'#b04a3a',spec:'Mixed · faults disclosed',bh:'—',lock:'Mixed',qty:50,cost:60,ask:90,cat:'iPhone'},
+  {id:'se',name:'iPhone SE 2020 64GB',grade:'B',gc:'#8a7d2e',spec:'EU spec',bh:'85%+',lock:'Unlocked',qty:40,cost:70,ask:92,cat:'iPhone'},
+  {id:'ipad9',name:'iPad 9th Gen 64GB',grade:'B',gc:'#8a7d2e',spec:'WiFi only · MDM-free',bh:'—',lock:'iCloud clean',qty:55,cost:150,ask:185,cat:'iPad'},
+  {id:'ipadair',name:'iPad Air 4 64GB',grade:'A',gc:'#3a7d5c',spec:'WiFi + Cellular',bh:'—',lock:'Unlocked',qty:22,cost:270,ask:315,cat:'iPad'},
+  {id:'mba',name:'MacBook Air M1 256GB',grade:'A',gc:'#3a7d5c',spec:'US keyboard · <200 cycles · no EFI/MDM',bh:'92%+',lock:'Unlocked',qty:18,cost:430,ask:520,cat:'Mac'},
+  {id:'s22',name:'Galaxy S22 128GB',grade:'A',gc:'#3a7d5c',spec:'EU · Knox clean · Exynos',bh:'89%+',lock:'Unlocked',qty:40,cost:210,ask:255,cat:'Samsung'},
+  {id:'s21',name:'Galaxy S21 128GB',grade:'B',gc:'#8a7d2e',spec:'EU · Knox clean',bh:'85%+',lock:'Unlocked',qty:35,cost:150,ask:185,cat:'Samsung'},
+  {id:'aw7',name:'Apple Watch S7 45mm',grade:'B',gc:'#8a7d2e',spec:'GPS',bh:'—',lock:'iCloud clean',qty:30,cost:120,ask:150,cat:'Watch'},
+  {id:'app2',name:'AirPods Pro 2',grade:'A',gc:'#3a7d5c',spec:'Genuine',bh:'—',lock:'—',qty:60,cost:120,ask:150,cat:'Audio'},
+];
+const invById=id=>INVENTORY.find(i=>i.id===id);
+
+/* ===================== BUYERS (9) ===================== */
+const BUYERS=[
+  {id:'karim',name:'Karim · Gulf Traders',color:'#0a7d63',diff:'d-easy',diffTxt:'VOLUME',blurb:'100 pcs iPhone 13, budget-driven',
+   itemId:'13',qty:100,target:320,max:338,patience:4,needs:['spec','bh'],
+   persona:'friendly Gulf volume buyer, budget-driven but fair, moves fast when the price is right',
+   opener:"Salam bro 👋 WTB iPhone 13 128GB, need 100 pcs for Dubai retail. Grade A/AB fine. Best all-in price per unit? Ready to move this week."},
+  {id:'lena',name:'Lena · FixPoint PL',color:'#5c6bd0',diff:'d-mid',diffTxt:'PARTS',blurb:'ASIS iPhone 11, wants honesty',
+   itemId:'11a',qty:50,target:74,max:92,patience:4,needs:['grade','imei'],
+   persona:'blunt Polish repair-shop owner buying for parts, hates oversell, wants honest fault disclosure',
+   opener:"Hi, repair shop in Warsaw. WTB iPhone 11 ASIS, ~50 pcs for parts + refurb. What's the fault breakdown and price? Don't tell me they're mint 🙂"},
+  {id:'tomas',name:'Tomás · iRetail ES',color:'#c46b1f',diff:'d-mid',diffTxt:'PREMIUM',blurb:'CPO iPhone 15PM, spec-picky',
+   itemId:'15pm',qty:10,target:905,max:955,patience:3,needs:['bh','spec','imei','lock'],
+   persona:'premium Spanish retailer, quality over price, strict — walks fast if specs are vague',
+   opener:"Hola. Looking for iPhone 15 Pro Max 256GB, CPO or top grade, 10 units for my Madrid stores. Must be EU spec, unlocked, high battery, clean. Quality matters more than price."},
+  {id:'ali',name:'GSM Ali',color:'#b04a3a',diff:'d-hard',diffTxt:'LOWBALL',blurb:'iPhone 14, hammers your margin',
+   itemId:'14',qty:60,target:392,max:420,patience:5,needs:['imei'],aggressive:true,
+   persona:'aggressive flipper, blunt, cash buyer, tests whether you hold your margin',
+   opener:"bro iPhone 14 128GB — 60 pcs. market is dead rn. i pay 375 max, cash today. take it or leave it 💸"},
+  {id:'sophie',name:'Sophie · EduTech UK',color:'#2f8f8f',diff:'d-mid',diffTxt:'iPad',blurb:'iPad 9 for schools, MDM-free',
+   itemId:'ipad9',qty:40,target:168,max:188,patience:4,needs:['wifi','mdm','imei'],
+   persona:'careful UK education supplier buying tablets for schools, needs MDM-free devices, cautious',
+   opener:"Hello 🙂 We supply schools. WTB iPad 9th gen, 40 units. Two things I must confirm: are they WiFi only or Cellular, and are they MDM-free / not still enrolled? Then we can talk price."},
+  {id:'miguel',name:'Miguel · MacHub PT',color:'#7a5cc0',diff:'d-hard',diffTxt:'Mac',blurb:'MacBook Air M1, cycle-count fussy',
+   itemId:'mba',qty:15,target:490,max:530,patience:3,needs:['cycle','imei','mdm'],
+   persona:'meticulous Portuguese Mac reseller, obsessed with battery cycle count, EFI/MDM lock, keyboard layout',
+   opener:"Boa tarde. WTB MacBook Air M1 256GB, 15 units. Before anything — what's the battery cycle count, keyboard layout, and are they free of EFI / MDM lock? I've been burned before."},
+  {id:'dmitri',name:'Dmitri · CIS Wholesale',color:'#556677',diff:'d-hard',diffTxt:'Samsung',blurb:'Galaxy S22, grey-market savvy',
+   itemId:'s22',qty:50,target:235,max:258,patience:4,needs:['knox','spec','lock'],
+   persona:'sharp CIS-region wholesaler, knows Samsung inside out, asks about Knox, chipset and network lock, negotiates hard',
+   opener:"Privet. WTB Galaxy S22 128GB, 50 pcs. Need Knox 0x0 (not tripped), and tell me — Exynos or Snapdragon, which region, and factory unlocked? Then price."},
+  {id:'fatima',name:'Fatima · SouqStore KSA',color:'#b0568a',diff:'d-mid',diffTxt:'TAX',blurb:'iPhone 12, invoice & VAT focused',
+   itemId:'12',qty:80,target:192,max:208,patience:4,needs:['vat','imei','moq'],
+   persona:'organised Saudi online-store owner, very focused on invoicing, VAT scheme and warranty terms',
+   opener:"Hi. WTB iPhone 12 64GB, around 80 pcs, mixed A/B ok. Two questions first: are these margin-VAT or VAT-qualifying, and do I get a proper invoice + any warranty? Then send your price."},
+  {id:'ade',name:'Ade · New Store NG',color:'#3a9d5c',diff:'d-easy',diffTxt:'NEWBIE',blurb:'First-timer, asks the basics',
+   itemId:'se',qty:30,target:85,max:96,patience:5,needs:['grade','bh','spec'],
+   persona:'first-time buyer in Lagos, new to trading, asks lots of basic questions (what is ASIS, what is BH, is EU spec ok for Nigeria), needs patient plain explanations',
+   opener:"Hi 🙏 I'm new to this. WTB iPhone SE 2020, maybe 30 pcs for my shop. Sorry for basic questions — what does grade mean here, what is BH, and is EU spec okay to use in Nigeria? Then your price please."},
+];
+
+/* ===================== TEMPLATES ===================== */
+const TPL_CATS=['Intro','Outreach','Sell','Sourcing','Follow-up','Terms','Close','Community'];
+const PRESETS=[
+  {id:'p1',cat:'Intro',title:'Intro to a new trading contact',body:"Hi {contact}, this is {me} from Mobi Hub. Good to connect 🤝 We trade refurbished Apple & Samsung in wholesale lots across Europe. Happy to share our live stock and take your WTB lists whenever you're buying. What are you working on right now?"},
+  {id:'p2',cat:'Outreach',title:'Cold outreach — add to lists',body:"Hi {contact}, {me} here from Mobi Hub. We move steady volume on iPhone, iPad, MacBook and Galaxy, graded and spec-checked. Can I add you to our daily WTS list and pick up your WTB? No spam — just clean stock and fair prices."},
+  {id:'p3',cat:'Sell',title:'Offer a specific lot',body:"Hi {contact}, got something for you 👇\n{device} — {spec}, IMEI clean, unlocked.\n{qty} pcs @ ${price}/unit.\nHappy to hold a batch for you today. Want me to lock it in?"},
+  {id:'p4',cat:'Sell',title:'Daily price-list share',body:"Morning {contact} ☀️ Fresh stock today:\n• {device} — {spec} — ${price}/unit\nMOQ and full list on request. Prices move fast, reply if anything fits your WTB."},
+  {id:'p5',cat:'Sourcing',title:'WTB to suppliers',body:"Hi {contact}, sourcing for a buyer:\nWTB {device}, {spec}, {qty} pcs.\nGrade A/AB, high BH, IMEI + iCloud clean. What can you do on price and when can you ship? Cash ready."},
+  {id:'p6',cat:'Follow-up',title:'Gentle nudge after silence',body:"Hey {contact}, just floating this back up 🙂 The {device} lot is still available at ${price}/unit but moving. No pressure — just didn't want you to miss it if it's useful. Shall I hold some?"},
+  {id:'p7',cat:'Terms',title:'Payment & terms',body:"To confirm terms {contact}: MOQ met, price ${price}/unit for {qty} pcs. Payment 50% deposit by TT to secure, balance before dispatch/collection. Sold under margin VAT, full invoice provided. Works for you?"},
+  {id:'p8',cat:'Close',title:'Confirm the order',body:"Perfect {contact} 🤝 Confirming: {qty}x {device}, {spec}, @ ${price}/unit. Send me your company details and I'll raise the invoice now. Deposit today, we ship on clearance. Pleasure doing business."},
+  {id:'p9',cat:'Community',title:'Invite to trading group',body:"Hi {contact}, we run a Mobi Hub B2B trading group — daily WTS/WTB, verified traders only, no time-wasters. Want me to add you? Good place to move stock and find what you need fast."},
+  {id:'p10',cat:'Follow-up',title:'Re-engage a quiet buyer',body:"Hi {contact}, been a while! Market's shifted and we've got sharper pricing on {device} now. If you're back in the market, tell me your WTB and I'll send my best numbers same day."},
+];
+let customTpl = store.get('templates')||[];
+
+/* ===================== LEARN CONTENT ===================== */
+const LEARN=[
+ {id:'trading',t:'Trading 101',h:`
+   <p>B2B device trading is buying and selling <b>refurbished phones and tech in wholesale lots</b> — you rarely touch retail. Money is made on the <b>spread</b>: the gap between what you buy at and sell at.</p>
+   <h4>The two sides of every message</h4>
+   <ul>
+     <li><b>WTS</b> — Want To Sell. A supplier posting stock they have.</li>
+     <li><b>WTB</b> — Want To Buy. A buyer posting what they need.</li>
+   </ul>
+   <p>A good trader matches a WTB to the cheapest matching WTS, adds a margin, and closes both sides — sometimes without ever holding the stock (a <b>broker flip</b>).</p>
+   <h4>Where deals happen</h4>
+   <p>Mostly WhatsApp groups and DMs, plus LinkedIn and email. Speed and trust win — the fastest clean quote usually takes the deal.</p>`},
+ {id:'devices',t:'Devices',h:`
+   <p>We trade five main families. Each has its own quirks buyers ask about:</p>
+   <ul>
+     <li><b>iPhone</b> — the core. Grade, BH%, spec/region and locks drive price.</li>
+     <li><b>iPad</b> — key question: <b>WiFi only</b> vs <b>WiFi + Cellular</b>. Also watch <b>MDM</b> on ex-school/business units.</li>
+     <li><b>MacBook</b> — buyers ask <b>battery cycle count</b>, <b>EFI/MDM lock</b>, and <b>keyboard layout</b> (US vs EU/ES etc).</li>
+     <li><b>Apple Watch</b> — GPS vs GPS+Cellular; must be <b>iCloud clean</b> and Activation-Lock free.</li>
+     <li><b>Samsung Galaxy</b> — buyers ask <b>Knox status</b> (0x0 = not tripped), <b>Exynos vs Snapdragon</b> chip, region and network lock.</li>
+   </ul>
+   <p class="note">WiFi-only vs Cellular applies to iPad and Watch — every iPhone is cellular.</p>`},
+ {id:'grades',t:'Grades',h:`
+   <p>Grades describe <b>cosmetic condition</b>. They vary by supplier — always read their grading key first.</p>
+   <table class="grtable">
+     <tr><td class="g">CPO</td><td>Certified pre-owned — like new, tested, often new battery/box. Premium.</td></tr>
+     <tr><td class="g">A+</td><td>Mint. No visible marks.</td></tr>
+     <tr><td class="g">A</td><td>Excellent. Tiny scratches under light only.</td></tr>
+     <tr><td class="g">AB</td><td>Light scratches, minor use.</td></tr>
+     <tr><td class="g">B</td><td>Good. Visible scratches, maybe small dents. Works fine.</td></tr>
+     <tr><td class="g">C</td><td>Heavy wear. Big scratches/dents, possible screen shadow. Works.</td></tr>
+     <tr><td class="g">ASIS+</td><td>Mostly works, minor faults disclosed.</td></tr>
+     <tr><td class="g">ASIS</td><td>No guarantee — buyer's risk. Treat as parts/repair, never quote as working.</td></tr>
+   </table>`},
+ {id:'spec',t:'Spec & Region',h:`
+   <p>Same model, different region = different price and buyer.</p>
+   <ul>
+     <li><b>US</b> — cheap, but iPhone 14+ is <b>eSIM only</b> (no SIM tray).</li>
+     <li><b>EU / Euro spec</b> — the European retail standard.</li>
+     <li><b>China / HK</b> — dual <b>physical</b> SIM, usually no eSIM.</li>
+     <li><b>Japan</b> — camera shutter sound can't be muted.</li>
+   </ul>
+   <h4>Model code (Settings → About)</h4>
+   <p>LL/A = US · B/A = UK · ZP/A = HK · CH/A = China · J/A = Japan · HN/A = India · AE/A = UAE · X/A = Australia</p>
+   <h4>Storage & naming</h4>
+   <p>Confirm storage (64/128/256/512GB/1TB) and always quote the full name — "iPhone 15 Pro Max 256GB", never just "15".</p>`},
+ {id:'battery',t:'Battery & Parts',h:`
+   <h4>Battery Health (BH%)</h4>
+   <p>The biggest silent price mover. 100% = new only. Buyers often set a floor (85%+ / 90%+). Below 80% iOS shows a service warning.</p>
+   <h4>Genuine vs aftermarket (AM)</h4>
+   <p>Non-genuine screen/battery/camera triggers iOS warnings and can kill <b>True Tone</b>. "All genuine parts" is a sellable claim — confirm it.</p>
+   <h4>MacBook — cycle count</h4>
+   <p>Laptops are priced on <b>battery cycle count</b> (lower is better; ~1000 is Apple's design limit). Always state it.</p>`},
+ {id:'locks',t:'Locks & Status',h:`
+   <p>These make or break a deal — a locked device is worth parts money.</p>
+   <ul>
+     <li><b>IMEI clean</b> — not blacklisted, not reported lost/stolen, no unpaid finance.</li>
+     <li><b>iCloud / FMI</b> — signed out, Find My off, no Activation Lock.</li>
+     <li><b>Network lock</b> — factory <b>unlocked</b> vs carrier-locked (locked = cheaper; name the carrier).</li>
+     <li><b>MDM</b> — ex-business/school devices under remote management; can't be set up. Sell as ASIS/parts.</li>
+     <li><b>Knox (Samsung)</b> — 0x0 means warranty bit not tripped; tripped Knox loses Samsung Pay/secure features.</li>
+     <li><b>EFI lock (Mac)</b> — firmware lock on stolen/managed Macs; makes them unusable.</li>
+   </ul>`},
+ {id:'tax',t:'Tax & Invoicing',h:`
+   <p>You don't need to be an accountant, but you must speak the language.</p>
+   <ul>
+     <li><b>Margin VAT (MVAT / margin scheme)</b> — VAT charged only on your <b>margin</b>, not the full price. Common in EU refurb. Buyer usually can't reclaim VAT on these.</li>
+     <li><b>VAT-qualifying</b> — VAT charged on the full value and shown on the invoice; a VAT-registered buyer can reclaim it. Priced/handled differently — always confirm which one a lot is.</li>
+     <li><b>Reverse charge</b> — on many intra-EU B2B sales the buyer accounts for VAT, not you (needs a valid VAT number).</li>
+     <li><b>Zero-rated export</b> — goods leaving the region can be zero-rated with proof of export.</li>
+     <li><b>EORI</b> — the number you need to import/export across borders.</li>
+   </ul>
+   <h4>Payment terms you'll quote</h4>
+   <p><b>TT</b> = bank transfer. Common: 50% deposit to secure, balance before dispatch/collection. Always confirm <b>MOQ</b> (minimum order) and issue a proper invoice.</p>
+   <p class="note">General info for training only — not tax or legal advice. Follow Mobi Hub's finance team on real invoicing.</p>`},
+ {id:'glossary',t:'Glossary',h:`
+   <div class="term"><b>WTS / WTB</b><span>Want to sell / want to buy.</span></div>
+   <div class="term"><b>MOQ</b><span>Minimum order quantity.</span></div>
+   <div class="term"><b>Spread</b><span>Gap between your buy and sell price — your profit.</span></div>
+   <div class="term"><b>BH</b><span>Battery health %.</span></div>
+   <div class="term"><b>Spec</b><span>Region variant (US / EU / CH / HK…).</span></div>
+   <div class="term"><b>AM</b><span>Aftermarket (non-genuine) part.</span></div>
+   <div class="term"><b>Clean</b><span>Clean IMEI + iCloud, no locks/blacklist.</span></div>
+   <div class="term"><b>ASIS</b><span>As-is — no functional guarantee.</span></div>
+   <div class="term"><b>CPO</b><span>Certified pre-owned — refurbished, like-new.</span></div>
+   <div class="term"><b>MVAT</b><span>Margin VAT scheme.</span></div>
+   <div class="term"><b>TT</b><span>Telegraphic transfer (bank payment).</span></div>
+   <div class="term"><b>Knox</b><span>Samsung security flag (0x0 = untripped).</span></div>
+   <div class="term"><b>MDM</b><span>Mobile Device Management — remote business/school lock.</span></div>
+   <div class="term"><b>Cycle count</b><span>Number of battery charge cycles (Mac).</span></div>`},
+ {id:'faq',t:'FAQ',h:`
+   <details><summary>A buyer offers below my cost. What do I do?</summary><div class="a">Hold. Never sell under your floor to "win" a deal. Anchor near your ask, concede in small $5–10 steps, justify with volume/quality. If they won't reach your floor, walk politely and leave the door open.</div></details>
+   <details><summary>Buyer asks "is this EU or US spec?" — why does it matter?</summary><div class="a">US iPhone 14+ is eSIM only (no SIM tray), which many markets can't use. EU spec takes a physical SIM. Always confirm before quoting — it's a common reason deals fall apart after.</div></details>
+   <details><summary>What if I don't know the BH or spec of a lot?</summary><div class="a">Don't guess. Say you'll confirm and come back. Quoting specs you're unsure of leads to disputes and returns — worse than a slow answer.</div></details>
+   <details><summary>Buyer wants ASIS "but all working". How do I handle it?</summary><div class="a">Be straight: ASIS means no guarantee, sold as parts/repair. Give an honest fault picture. Buyers trust honesty and come back; overselling ASIS burns the relationship on the first return.</div></details>
+   <details><summary>Margin VAT vs VAT-qualifying — quick version?</summary><div class="a">Margin VAT = VAT on your margin only, buyer usually can't reclaim. VAT-qualifying = VAT on full value, VAT-registered buyer can reclaim. They price differently — always state which a lot is.</div></details>
+   <details><summary>How do I secure a deal so it doesn't fall through?</summary><div class="a">Confirm qty, price, spec and terms in one clear message, then take a deposit (typically 50% by TT) and raise the invoice. Verbal "deals" aren't deals until money moves.</div></details>`},
+];
+
+/* ===================== STATE ===================== */
+let buyer,item,state,rounds,buyerCounter,coverage,log,closedPrice,aiHistory,lastPrice;
+const session=Object.assign({deals:0,margin:0,scores:[]}, store.get('session')||{});
+const $=id=>document.getElementById(id);
+const now=()=>{const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')};
+const persist=()=>{ if(settings.autosave){ store.set('session',session); store.set('templates',customTpl);} };
+
+/* ===================== TABS ===================== */
+function showTab(t){
+  document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
+  const trade=t==='trade';
+  $('side').style.display=trade?'':'none';
+  $('chatwrap').style.display=trade?'':'none';
+  ['learn','templates','settings'].forEach(v=>$('view-'+v).style.display=(v===t)?'block':'none');
+}
+
+/* ===================== TRADE: SETUP ===================== */
+function renderScenarios(){
+  $('scenarios').innerHTML=BUYERS.map(b=>`
+    <div class="scenario" data-id="${b.id}" onclick="loadBuyer('${b.id}')">
+      <div class="av" style="background:${b.color}">${b.name[0]}</div>
+      <div class="meta"><strong>${b.name.split(' · ')[0]}<span class="diff ${b.diff}">${b.diffTxt}</span></strong>
+      <small>${b.blurb}</small></div></div>`).join('');
+}
+function renderLots(){
+  $('lots').innerHTML=INVENTORY.map(i=>{
+    const bits=[i.spec]; if(i.bh!=='—')bits.push(i.bh+' BH'); if(i.lock!=='—')bits.push(i.lock);
+    return `<div class="lot"><div class="top"><b><span class="gtag" style="background:${i.gc}">${i.grade}</span>${i.name}</b><span class="ask">$${i.ask}</span></div>
+      <div class="spec">${bits.join(' · ')} · IMEI clean</div>
+      <div class="row"><span class="qty">${i.qty} pcs · cost $${i.cost}</span>
+      <button onclick="quoteLot('${i.id}')">Quote this →</button></div></div>`;}).join('');
+}
+function loadBuyer(id){
+  buyer=BUYERS.find(b=>b.id===id); item=invById(buyer.itemId);
+  state='open';rounds=0;buyerCounter=null;closedPrice=null;lastPrice=null;buyer._oversold=false;
+  coverage={grade:false,bh:false,spec:false,imei:false,lock:false,moq:false,mdm:false,vat:false,cycle:false,wifi:false,knox:false};
+  log=[];aiHistory=[];
+  document.querySelectorAll('.scenario').forEach(s=>s.classList.toggle('active',s.dataset.id===id));
+  $('h-av').textContent=buyer.name[0];$('h-av').style.background=buyer.color;
+  $('h-name').textContent=buyer.name;$('h-status').textContent='online';
+  $('messages').innerHTML='';addDay();
+  addSys(`New enquiry — you are SELLING to ${buyer.name}. Quote from stock, confirm the specs, hold your margin.`);
+  incoming(buyer.opener);
+  $('send').disabled=false;$('input').value='';renderChips();
+}
+function restartDeal(){ if(buyer)loadBuyer(buyer.id); }
+
+/* ===================== MESSAGES ===================== */
+function bubble(text,cls,tick){const m=document.createElement('div');m.className='msg '+cls;
+  m.innerHTML=escapeHtml(text)+`<span class="t">${now()}${tick?' <span class="tick">✓✓</span>':''}</span>`;
+  $('messages').appendChild(m);scroll();}
+function incoming(t){bubble(t,'in',false);log.push({s:'buyer',t});aiHistory.push({role:'assistant',content:t})}
+function outgoing(t){bubble(t,'out',true);log.push({s:'me',t})}
+function addDay(){const d=document.createElement('div');d.className='day';d.textContent='TODAY';$('messages').appendChild(d)}
+function addSys(t){const d=document.createElement('div');d.className='sys';d.textContent=t;$('messages').appendChild(d);scroll()}
+function scroll(){const m=$('messages');m.scrollTop=m.scrollHeight}
+function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function typing(on){$('typing').classList.toggle('show',on);if(on)scroll()}
+
+/* ===================== CHIPS + DRAWER ===================== */
+function renderChips(){$('chips').innerHTML=`
+  <span class="chip" onclick="openDrawer()">📦 Quote from stock</span>
+  <span class="chip" onclick="insertConfirm()">✅ Confirm specs</span>
+  <span class="chip" onclick="insert('MOQ met. Payment 50% deposit by TT, balance on collection. Sold under margin VAT, full invoice provided.')">💳 Terms</span>`;}
+function openDrawer(){$('drawer').classList.add('show')}
+function closeDrawer(){$('drawer').classList.remove('show')}
+function insert(t){const i=$('input');i.value=(i.value?i.value.trim()+' ':'')+t;i.focus();autosize()}
+function quoteLot(id){const i=invById(id);const bits=[`Grade ${i.grade}`,i.spec];if(i.bh!=='—')bits.push(i.bh+' BH');if(i.lock!=='—')bits.push(i.lock);
+  $('input').value=`${i.name} — ${bits.join(', ')}, IMEI clean. $${i.ask}/unit, ${i.qty} pcs available.`;closeDrawer();$('input').focus();autosize();}
+function insertConfirm(){
+  let t;
+  if(item.grade==='ASIS')t=`Being straight — these are ASIS, faults disclosed, sold as parts/repair. IMEI clean, no blacklist. Priced accordingly.`;
+  else{const bits=[`Grade ${item.grade}`,item.spec];if(item.bh!=='—')bits.push(item.bh+' BH');if(item.lock!=='—')bits.push(item.lock);
+    t=`Confirmed: ${bits.join(', ')}, IMEI + iCloud clean${item.cat==='Samsung'?', Knox 0x0':''}${item.cat==='Mac'?', no EFI/MDM lock':''}${(item.cat==='iPad'||item.cat==='Mac')?', MDM-free':''}.`;}
+  insert(t);
+}
+
+/* ===================== PARSING ===================== */
+function parsePrice(txt){const s=txt.replace(/,/g,'');
+  let m=s.match(/\$\s?(\d{2,4})/);if(m)return +m[1];
+  m=s.match(/(\d{2,4})\s?(?:usd|\$|each|ea\b|\/u|\/unit|per unit|pu\b|a piece|apiece)/i);if(m)return +m[1];
+  const nums=(s.match(/\d{2,4}/g)||[]).map(Number).filter(n=>n!==buyer.qty);
+  const lo=item.cost*0.5,hi=item.ask*1.6;const cand=nums.filter(n=>n>=lo&&n<=hi);
+  return cand.length?cand[cand.length-1]:null;}
+function trackCoverage(txt){const t=txt.toLowerCase();
+  if(/\b(bh|battery|health)\b|\d+\s?%/.test(t))coverage.bh=true;
+  if(/\b(spec|eu|euro|us spec|esim|region|ch spec|hk spec|physical sim)\b/.test(t))coverage.spec=true;
+  if(/\b(imei|icloud|clean|blacklist|find my|fmi|no locks?)\b/.test(t))coverage.imei=true;
+  if(/\b(unlock|unlocked|factory|carrier|locked)\b/.test(t))coverage.lock=true;
+  if(/\b(grade|asis|cpo|fault|parts|refurb|a\+|ab|mint)\b/.test(t))coverage.grade=true;
+  if(/\b(moq|minimum|payment|terms|deposit|tt|balance|collection)\b/.test(t))coverage.moq=true;
+  if(/\b(mdm|remote management|managed|enrolled|dep|business lock|enterprise)\b/.test(t))coverage.mdm=true;
+  if(/\b(vat|mvat|margin scheme|margin[- ]?vat|vat[- ]?qualifying|reverse charge|invoice)\b/.test(t)){coverage.vat=true;coverage.moq=true;}
+  if(/\b(cycle|cycles|efi)\b/.test(t))coverage.cycle=true;
+  if(/\b(wifi|wi[- ]?fi|cellular|lte)\b/.test(t))coverage.wifi=true;
+  if(/\b(knox|exynos|snapdragon|0x0)\b/.test(t))coverage.knox=true;}
+const wantsDeal=t=>/\b(deal|done|agreed|sold|book it|let'?s do|we have a deal|confirmed|take it)\b|👍|🤝/i.test(t);
+
+/* ===================== SEND ===================== */
+async function sendMsg(){
+  const txt=$('input').value.trim();if(!txt||state==='closed'||state==='walked')return;
+  outgoing(txt);trackCoverage(txt);aiHistory.push({role:'user',content:txt});
+  $('input').value='';autosize();$('send').disabled=true;typing(true);
+  await wait(650+Math.random()*650);
+  let handled=false;
+  if($('aiToggle').checked){const ai=await aiReply();if(ai){typing(false);handled=true;applyReply(ai.text,ai.stateOut,ai.price)}}
+  if(!handled){typing(false);scriptedReply(txt)}
+  if(state!=='closed'&&state!=='walked')$('send').disabled=false;
+}
+function applyReply(text,stateOut,price){
+  incoming(text);
+  if(stateOut==='agreed'){closedPrice=price||buyerCounter||lastPrice||item.ask;finalize(true)}
+  else if(stateOut==='walked'){finalize(false)}
+}
+
+/* ===================== SCRIPTED ENGINE ===================== */
+function scriptedReply(txt){
+  // honesty check for parts buyer
+  if(buyer.id==='lena' && /(all working|tested good|fully working|mint|no faults?|perfect|like new)/i.test(txt)){
+    buyer._oversold=true;rounds++;
+    if(rounds>=buyer.patience){incoming("Come on — you're selling me dreams on ASIS 🙄 I'll source parts elsewhere.");return finalizeSoon(false)}
+    incoming("These are ASIS 😅 don't tell me they're mint. Just give me the honest fault % and a fair parts price.");return;
+  }
+  let price=parsePrice(txt);if(price!=null)lastPrice=price;
+  const accepting=wantsDeal(txt)&&buyerCounter!=null;
+  if(accepting&&price==null){closedPrice=buyerCounter;incoming(reply('accept',buyerCounter));return finalizeSoon(true)}
+  const miss=missingNeed();
+  if(price==null){
+    if(miss){incoming(reply('ask',null,miss));return}
+    if(lastPrice==null){incoming(reply('nudge'));return}
+    price=lastPrice;
+  }else if(miss&&price<=buyer.max){incoming(reply('askThenLater',price,miss));return}
+  rounds++;
+  const belowCost=price<item.cost;
+  const allNeeds=buyer.needs.every(n=>coverage[n]);
+  let thresh=Math.round(buyer.target+(buyer.max-buyer.target)*Math.min(1,rounds/buyer.patience));
+  if(allNeeds)thresh=Math.min(buyer.max,thresh+Math.round((buyer.max-buyer.target)*0.25)); // trust pays a bit more
+  if(price<=thresh){closedPrice=price;incoming(reply('accept',price));return finalizeSoon(true)}
+  buyerCounter=Math.max(buyer.target,Math.round((buyer.target*0.4+price*0.6)/5)*5);
+  if(buyer.aggressive)buyerCounter=Math.max(buyer.target,Math.round((buyer.target*0.65+price*0.35)/5)*5);
+  if(rounds>=buyer.patience){
+    if(price<=buyer.max*1.02){closedPrice=Math.min(price,buyer.max);incoming(reply('grudge',closedPrice));return finalizeSoon(true)}
+    if((price-buyer.max)/buyer.max>0.06){incoming(reply('walk',price));return finalizeSoon(false)}
+    closedPrice=buyer.max;buyerCounter=buyer.max;incoming(reply('final',buyer.max));return;
+  }
+  incoming(reply('counter',buyerCounter,null,belowCost,price));
+}
+function missingNeed(){for(const n of buyer.needs){if(!coverage[n])return n}return null}
+function reply(kind,price,need,belowCost,traderPrice){
+  const needTxt={bh:"what's the battery health?",spec:"which spec — I need the right region, no US eSIM surprises",
+    imei:"are they IMEI + iCloud clean, no blacklist?",lock:"factory unlocked, yes?",
+    grade:"what grade exactly, and any faults?",moq:"what's your MOQ and payment terms?",
+    mdm:"are they MDM-free / not still enrolled?",vat:"margin-VAT or VAT-qualifying? and I need a proper invoice",
+    cycle:"what's the battery cycle count, and any EFI/MDM lock?",wifi:"WiFi only or WiFi+Cellular?",
+    knox:"Knox status? Exynos or Snapdragon, and network unlocked?"};
+  const q=needTxt[need]||"can you confirm the details?";
+  const R={
+    ask:[`Before price — ${q}`,`Ok. ${q}`],
+    askThenLater:[`Noted on $${traderPrice||price}. But first — ${q}`,`$${price} maybe. First though: ${q}`],
+    nudge:[`So what's your number per unit? Ready to move.`,`Send me your best all-in price 👍`],
+    accept:[`👍 Deal at $${price}. Send company details + invoice, I'll release the deposit today.`,`Works. $${price} it is 🤝 Let's do the paperwork.`],
+    grudge:[`Ah you're squeezing me 😅 fine — $${price}, done. Send invoice.`,`Ok ok, $${price}. Last one at this price. Deal.`],
+    counter:buyer.aggressive
+      ?[`$${traderPrice} lol no. budget's tight. do $${buyerCounter} and it's cash today.`,`too high bro. $${buyerCounter} max, i'm buying volume.`]
+      :[`$${traderPrice} is a bit high for ${buyer.qty} pcs. Meet me at $${buyerCounter}?`,`Appreciate it, but at volume I need $${buyerCounter}/unit. Can you work with that?`],
+    final:[`Final from me: $${price}. That's my ceiling — yes or no?`,`I can stretch to $${price}, not a cent more. Deal or I pass.`],
+    walk:[`Too far apart, wasting time. I'll source elsewhere — ping me if the price moves.`,`Nah, $${traderPrice||price} doesn't work. Passing on this one.`]
+  };
+  const arr=R[kind]||['...'];return arr[Math.floor(Math.random()*arr.length)];
+}
+function finalizeSoon(win){$('send').disabled=true;setTimeout(()=>finalize(win),650)}
+
+/* ===================== AI BACKENDS ===================== */
+function buyerSystem(){
+  return `You are role-playing a B2B refurbished-device BUYER named "${buyer.name}" haggling over WhatsApp with a seller (the user).
+You already opened with: "${buyer.opener}"
+Deal: you want to BUY ${buyer.qty}x ${item.name} (${item.grade}, ${item.spec}).
+Your PRIVATE target is $${buyer.target}/unit and absolute MAX is $${buyer.max}/unit — NEVER reveal these numbers.
+Personality: ${buyer.persona}.
+You care about: ${buyer.needs.map(labelOf).join(', ')}. Ask about these using proper trade lingo BEFORE agreeing.
+Rules:
+- Reply ONLY as the buyer, short WhatsApp style (max ~35 words), trade lingo (WTB, MOQ, BH, spec, IMEI, MDM, Knox, VAT).
+- Haggle. Counter if their price is above your target. Agree only if price <= your MAX AND your concerns are answered.
+- Walk away if they insult you, waste time badly, or won't get near your max after several rounds.
+- ALWAYS end with a hidden tag on its own line, exactly: [[STATE:negotiating|agreed|walked;PRICE:<per-unit number on the table, else 0>]]`;
+}
+function parseAI(text){
+  let stateOut='negotiating',price=null;
+  const m=text.match(/\[\[STATE:(negotiating|agreed|walked);PRICE:(\d+)\]\]/i);
+  if(m){stateOut=m[1].toLowerCase();price=+m[2]||null;text=text.replace(m[0],'').trim()}
+  else if(/\b(deal|agreed|send invoice|company details|let'?s do it)\b/i.test(text)){stateOut='agreed';price=parsePrice(text)}
+  return {text:text.trim(),stateOut,price};
+}
+async function aiReply(){
+  if(settings.key)return await aiReplyGemini();
+  return await aiReplyAnthropic();
+}
+async function aiReplyAnthropic(){
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,system:buyerSystem(),messages:aiHistory.slice(0,-0)})});
+    if(!res.ok)return null;
+    const data=await res.json();
+    let text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+    if(!text)return null;return parseAI(text);
+  }catch(e){return null}
+}
+async function aiReplyGemini(){
+  try{
+    const model=settings.model||'gemini-2.0-flash';
+    const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(settings.key)}`;
+    const contents=aiHistory.map(h=>({role:h.role==='user'?'user':'model',parts:[{text:h.content}]}));
+    if(contents.length&&contents[0].role==='model')contents.unshift({role:'user',parts:[{text:'(start negotiation)'}]});
+    const body={system_instruction:{parts:[{text:buyerSystem()}]},contents,generationConfig:{maxOutputTokens:300,temperature:0.9}};
+    const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(!res.ok){toast('Gemini error '+res.status+' — using scripted');return null}
+    const data=await res.json();
+    let text=(data.candidates?.[0]?.content?.parts||[]).map(p=>p.text).join('').trim();
+    if(!text)return null;return parseAI(text);
+  }catch(e){toast('AI unreachable — using scripted');return null}
+}
+
+/* ===================== SCORING ===================== */
+function labelOf(k){return {grade:'grade / faults',bh:'battery health',spec:'spec / region',imei:'IMEI + iCloud clean',
+  lock:'lock status',moq:'MOQ / terms',mdm:'MDM status',vat:'VAT / invoicing',cycle:'cycle count',
+  wifi:'WiFi vs Cellular',knox:'Knox / chipset'}[k]||k}
+function finalize(win){
+  state=win?'closed':'walked';$('send').disabled=true;$('chips').innerHTML='';
+  const price=win?closedPrice:0,units=buyer.qty,marginU=win?(price-item.cost):0,marginTotal=marginU*units;
+  let score=0;const coach=[];const keys=[...new Set([...buyer.needs,'imei','moq'])];
+  if(win){
+    const askMargin=(item.ask-item.cost);const held=askMargin>0?(marginU/askMargin):1;
+    let mScore=Math.max(0,Math.min(55,Math.round(held*55)));if(marginU<0)mScore=0;score+=mScore+20;
+    const got=keys.filter(k=>coverage[k]).length;score+=Math.round(got/keys.length*25);
+    if(buyer._oversold){score=Math.min(score,55);coach.push(['bad',`You oversold ASIS stock as working — ${buyer.name.split(' · ')[0]} noticed. Honesty on faults keeps buyers for life.`]);}
+    if(marginU<0)coach.push(['bad',`You sold at $${price} — <b>below your $${item.cost} cost</b>. Never chase a deal under your floor.`]);
+    else if(held>=0.85)coach.push(['good',`Strong close — held $${marginU}/unit (${Math.round(held*100)}% of full margin). That's discipline.`]);
+    else if(held>=0.4)coach.push(['info',`Fair margin: $${marginU}/unit. A little more room before their ceiling.`]);
+    else coach.push(['bad',`Thin margin — only $${marginU}/unit. You conceded fast; anchor higher, hold longer.`]);
+    keys.forEach(k=>{if(!coverage[k]&&buyer.needs.includes(k))coach.push(['bad',`Closed without confirming <b>${labelOf(k)}</b> — this buyer cared about it. That's how disputes start.`]);});
+    if(buyer.needs.every(k=>coverage[k]))coach.push(['good',`Nailed every spec this buyer asked for before agreeing — textbook.`]);
+    if(!coverage.moq)coach.push(['info',`Tip: lock in payment terms / deposit before calling it done.`]);
+  }else{
+    coach.push(['bad',`${buyer.name.split(' · ')[0]} walked. You didn't get within reach of their ceiling in time.`]);
+    coach.push(['info',`Anchor near your ask, concede in small $5–10 steps, and bundle qty to justify price.`]);
+    if(missingNeed())coach.push(['info',`You also left <b>${labelOf(missingNeed())}</b> unconfirmed — buyers stall when unsure.`]);
+  }
+  score=Math.max(0,Math.min(100,score));
+  if(win){session.deals++;session.margin+=marginTotal}session.scores.push(score);updateStats();persist();
+  const good=score>=70,mid=score>=45;const col=win?(good?'#14785c':mid?'#d98a1f':'#b04a3a'):'#b04a3a';
+  $('v-label').textContent=win?'DEAL CLOSED':'DEAL LOST';$('v-label').style.color=col;
+  $('v-title').textContent=win?(good?'Clean trade 🤝':mid?'Closed — with leaks':'Closed, but money left on the table'):'They walked 🚶';
+  $('ring').style.background=`conic-gradient(${col} ${score*3.6}deg,#e6e1d7 0)`;
+  $('ring').innerHTML=`<div style="width:90px;height:90px;background:var(--cream);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center"><b style="font-family:'Bricolage Grotesque',sans-serif;font-size:32px;color:${col}">${score}</b><small style="font-size:10px;color:#7a857f">/ 100</small></div>`;
+  $('k-units').textContent=win?units:'0';$('k-price').textContent=win?('$'+price):'—';
+  $('k-margin').textContent=win?('$'+marginTotal.toLocaleString()):'$0';$('k-margin').style.color=marginTotal<0?'#b04a3a':'var(--ink)';
+  $('coach').innerHTML=coach.map(c=>`<div class="${c[0]}">${c[1]}</div>`).join('');
+  $('modal').classList.add('show');
+}
+function closeModal(){$('modal').classList.remove('show')}
+function updateStats(){$('s-deals').textContent=session.deals;$('s-margin').textContent='$'+session.margin.toLocaleString();
+  $('s-score').textContent=session.scores.length?Math.round(session.scores.reduce((a,b)=>a+b,0)/session.scores.length):'–';}
+function nextDeal(){closeModal();const others=BUYERS.filter(b=>b.id!==buyer.id);loadBuyer(others[Math.floor(Math.random()*others.length)].id);}
+
+/* ===================== DOWNLOAD CHAT ===================== */
+function downloadChat(){
+  if(!log||!log.length){toast('Nothing to export yet');return}
+  const head=`Mobi Hub Trade Trainer — Chat Export\nBuyer: ${buyer.name}\nProduct: ${item.name}\nDate: ${new Date().toLocaleString()}\n${'—'.repeat(32)}\n\n`;
+  const body=log.map(m=>`${m.s==='me'?(settings.name||'Me'):buyer.name.split(' · ')[0]}:\n${m.t}`).join('\n\n');
+  const blob=new Blob([head+body],{type:'text/plain'});const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=`chat-${buyer.id}-${Date.now()}.txt`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Chat downloaded ✓');
+}
+
+/* ===================== LEARN RENDER ===================== */
+function renderLearn(){
+  $('learnpills').innerHTML=LEARN.map(s=>`<span class="pill" onclick="document.getElementById('L-${s.id}').scrollIntoView({behavior:'smooth'})">${s.t}</span>`).join('');
+  $('learncontent').innerHTML=LEARN.map(s=>`<div class="sec" id="L-${s.id}"><h3>${s.t}</h3>${s.h}</div>`).join('');
+}
+
+/* ===================== TEMPLATES RENDER ===================== */
+let tplFilter='All';
+function fillTpl(body){const c=$('tplContact')?.value.trim()||'{contact}';
+  return body.replace(/\{contact\}/g,c).replace(/\{me\}/g,settings.name||'{me}');}
+function renderTemplates(){
+  $('tplcats').innerHTML=['All',...TPL_CATS].map(c=>`<span class="pill" style="${c===tplFilter?'background:#14785c;color:#fff;border-color:#14785c':''}" onclick="tplFilter='${c}';renderTemplates()">${c}</span>`).join('');
+  $('ntCat').innerHTML=TPL_CATS.map(c=>`<option>${c}</option>`).join('');
+  const all=[...PRESETS,...customTpl.map(t=>({...t,custom:true}))];
+  const list=all.filter(t=>tplFilter==='All'||t.cat===tplFilter);
+  $('tpllist').innerHTML=list.map(t=>`<div class="tpl"><div class="h"><b>${escapeHtml(t.title)}</b><span class="cat">${t.cat}</span></div>
+    <pre>${escapeHtml(fillTpl(t.body))}</pre>
+    <div class="acts"><button class="bcopy" onclick="copyTpl('${t.id}')">Copy</button>
+    ${t.custom?`<button class="bdel" onclick="delTemplate('${t.id}')">Delete</button>`:''}</div></div>`).join('')||'<p class="note">No templates in this category yet.</p>';
+}
+function copyTpl(id){const t=[...PRESETS,...customTpl].find(x=>x.id===id);if(t)copyText(fillTpl(t.body));}
+function addTemplate(){const title=$('ntTitle').value.trim(),cat=$('ntCat').value,body=$('ntBody').value.trim();
+  if(!title||!body){toast('Add a name and message');return}
+  customTpl.push({id:'c'+Date.now(),cat,title,body});persist();
+  $('ntTitle').value='';$('ntBody').value='';renderTemplates();toast('Template saved ✓');}
+function delTemplate(id){customTpl=customTpl.filter(t=>t.id!==id);persist();renderTemplates();toast('Deleted');}
+
+/* ===================== SETTINGS ===================== */
+function loadSettingsUI(){
+  $('setName').value=settings.name||'';$('setKey').value=settings.key||'';
+  $('setModel').value=settings.model||'gemini-2.0-flash';$('setRemember').checked=!!settings.remember;
+  $('setAutosave').checked=settings.autosave!==false;applyAiSrc();applyAgent();$('aiToggle').checked=!!settings.aiOn;
+}
+function saveSettings(){
+  settings.name=$('setName').value.trim();settings.key=$('setKey').value.trim();
+  settings.model=$('setModel').value.trim()||'gemini-2.0-flash';settings.remember=$('setRemember').checked;
+  settings.autosave=$('setAutosave').checked;
+  const toStore={name:settings.name,model:settings.model,remember:settings.remember,autosave:settings.autosave,aiOn:settings.aiOn};
+  if(settings.autosave)store.set('settings',toStore); else store.del('settings');
+  if(settings.remember&&settings.autosave)store.set('geminiKey',settings.key); else store.del('geminiKey');
+  applyAiSrc();applyAgent();renderTemplates();
+  const ok=$('setOk');ok.style.display='inline';setTimeout(()=>ok.style.display='none',1600);toast('Settings saved ✓');
+}
+function clearData(){['settings','geminiKey','session','templates'].forEach(k=>store.del(k));
+  session.deals=0;session.margin=0;session.scores=[];customTpl=[];settings={name:'',key:'',model:'gemini-2.0-flash',remember:false,autosave:true};
+  updateStats();loadSettingsUI();renderTemplates();toast('All saved data cleared');}
+function applyAiSrc(){$('aisrc').textContent=settings.key?'Source: Gemini (your key)':'Source: Claude (in Claude.ai only)';}
+function applyAgent(){$('agentline').innerHTML=settings.name?`Agent: <b>${escapeHtml(settings.name)}</b>`:'';}
+
+/* ===================== UTIL ===================== */
+function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+function autosize(){const t=$('input');t.style.height='auto';t.style.height=Math.min(t.scrollHeight,92)+'px'}
+let toastT;function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),1800);}
+function copyText(t){if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(()=>toast('Copied ✓')).catch(()=>fb())}else fb();
+  function fb(){const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Copied ✓')}catch(e){toast('Copy failed')}document.body.removeChild(ta);}}
+$('input').addEventListener('input',autosize);
+$('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}});
+$('aiToggle').addEventListener('change',e=>{settings.aiOn=e.target.checked;if(settings.autosave){const s=store.get('settings')||{};s.aiOn=settings.aiOn;store.set('settings',s);}});
+
+/* ===================== INIT ===================== */
+renderScenarios();renderLots();renderLearn();renderTemplates();loadSettingsUI();updateStats();loadBuyer('karim');
+</script>
+</body>
+</html>
