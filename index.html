@@ -56,6 +56,9 @@
   .switch input:checked + .slider{background:#1fbf8f}
   .switch input:checked + .slider:before{transform:translateX(18px)}
   .aisrc{font-size:10px;color:#67ab90;margin-top:6px}
+  .modeseg{display:flex;gap:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:4px}
+  .modeseg button{flex:1;background:none;border:none;color:#8fc3ac;font-family:inherit;font-weight:700;font-size:12px;padding:8px 4px;border-radius:9px;cursor:pointer;transition:.15s}
+  .modeseg button.on{background:#1fbf8f;color:#04120d}
 
   /* CHAT */
   .chatwrap{flex:1;display:flex;align-items:center;justify-content:center;padding:18px}
@@ -218,7 +221,11 @@
       <div class="brand"><div class="mark">M</div>
         <div><h1>Trade Trainer</h1><span>MOBI HUB · SALES DESK</span></div></div>
       <div class="agent" id="agentline"></div>
-      <div class="panel"><div class="lbl">Pick a buyer</div><div id="scenarios"></div></div>
+      <div class="modeseg">
+        <button id="m-inbound" class="on" onclick="setMode('inbound')">📥 Inbound</button>
+        <button id="m-outreach" onclick="setMode('outreach')">📤 Outreach</button>
+      </div>
+      <div class="panel"><div class="lbl" id="pickLbl">Pick a buyer</div><div id="scenarios"></div></div>
       <div class="panel"><div class="lbl">This session</div>
         <div class="stats">
           <div class="stat"><b id="s-deals">0</b><span>DEALS</span></div>
@@ -352,9 +359,9 @@
   <h2 id="v-title"></h2>
   <div class="ring" id="ring"></div>
   <div class="kpis">
-    <div class="kpi"><b id="k-units">0</b><span>UNITS</span></div>
-    <div class="kpi"><b id="k-price">$0</b><span>PRICE/UNIT</span></div>
-    <div class="kpi"><b id="k-margin">$0</b><span>MARGIN</span></div>
+    <div class="kpi"><b id="k-units">0</b><span id="k-l1">UNITS</span></div>
+    <div class="kpi"><b id="k-price">$0</b><span id="k-l2">PRICE/UNIT</span></div>
+    <div class="kpi"><b id="k-margin">$0</b><span id="k-l3">MARGIN</span></div>
   </div>
   <div class="coach" id="coach"></div>
   <div style="display:flex;gap:9px">
@@ -435,6 +442,54 @@ const BUYERS=[
    itemId:'se',qty:30,target:85,max:96,patience:5,needs:['grade','bh','spec'],
    persona:'first-time buyer in Lagos, new to trading, asks lots of basic questions (what is ASIS, what is BH, is EU spec ok for Nigeria), needs patient plain explanations',
    opener:"Hi 🙏 I'm new to this. WTB iPhone SE 2020, maybe 30 pcs for my shop. Sorry for basic questions — what does grade mean here, what is BH, and is EU spec okay to use in Nigeria? Then your price please."},
+];
+
+/* ===================== OUTREACH: PROSPECTS & OBJECTIONS ===================== */
+let MODE='inbound';
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const OBJ={
+  competitor:{ask:"We already work with a supplier we're happy with. Why would I switch?",
+    clear:/(no need to switch|don'?t have to switch|backup|second source|in addition|alongside|complement|compare|no pressure|whenever they can'?t|when they run short|just an option)/i,
+    done:"Fair enough — a backup never hurts."},
+  trust:{ask:"No offense, but I've been burned before — deposit taken, half the units DOA. How do I know you're legit?",
+    clear:/(references?|verified|escrow|registered( company)?|full invoice|invoice|video (call|verification)|start small|small trial|trial|based in|track record|trusted by|guarantee|inspect|imei report|company reg)/i,
+    done:"Okay, that's reassuring."},
+  busy:{ask:"I'm slammed today. Just send your list and I'll look when I get a sec.",
+    clear:/(list|here'?s|sending|attached|wts|quick|one line|straight to|won'?t take (long|a minute))/i,
+    done:"Good — quick and to the point."},
+  price:{ask:"I only buy on price. If you're not the cheapest, don't waste my time.",
+    clear:/\$\s?\d|\d{2,4}\s?(usd|each|\/unit|per unit)|(competitive|sharp price|beat|below market|best number|undercut)/i,
+    done:"Now that's a number I can work with."},
+  notinterested:{ask:"Not interested, thanks.",
+    clear:/(no worries|no pressure|totally understand|just in case|whenever|if that ever changes|leave the door|no obligation|keep my details)/i,
+    done:"...alright, since you're not pushing — go on then."}
+};
+const OBJ_LABEL={competitor:'already have a supplier',trust:'trust / been burned before',busy:'too busy',price:'price-only',notinterested:'not interested'};
+const PROSPECTS=[
+  {id:'marcus',name:'Marcus · TechResell UK',color:'#0a7d63',diff:'d-mid',diffTxt:'HAS SUPPLIER',blurb:'Retail chain, happy with current source',
+   biz:'a phone retail chain',hintItem:'13',coldness:24,patience:6,hot:60,objections:['competitor'],goal:{key:'list',txt:'agree to receive your price list'},
+   persona:'polite but comfortable UK retailer who already has a supplier and sees no urgent reason to change'},
+  {id:'ivan',name:'Ivan · Volt Wholesale',color:'#b04a3a',diff:'d-hard',diffTxt:'BEEN BURNED',blurb:'Scammed before, deeply distrustful',
+   biz:'a wholesale trading desk',hintItem:'14',coldness:16,patience:6,hot:66,objections:['trust'],goal:{key:'trial',txt:'agree to a small trial order'},
+   persona:'wary wholesaler who got scammed by a new contact (deposit taken, DOA units) and now distrusts strangers'},
+  {id:'grace',name:'Grace · QuickBuy NG',color:'#c46b1f',diff:'d-mid',diffTxt:'BUSY',blurb:'Curt, time-poor purchasing lead',
+   biz:'a busy import store',hintItem:'12',coldness:22,patience:5,hot:56,objections:['busy'],goal:{key:'list',txt:'agree to receive your price list'},
+   persona:'short, no-nonsense purchasing manager with no time for small talk — rewards brevity and a strong hook'},
+  {id:'omar',name:'Omar · BestPrice Traders',color:'#5c6bd0',diff:'d-hard',diffTxt:'PRICE ONLY',blurb:'No loyalty, only cares about cheapest',
+   biz:'a price-driven trading shop',hintItem:'13',coldness:20,patience:6,hot:60,objections:['price'],goal:{key:'list',txt:'engage on a specific competitive offer'},
+   persona:'hard-nosed price shopper with zero loyalty who ghosts anyone leading with fluff instead of a sharp number'},
+  {id:'lucia',name:'Lucia · CityFix',color:'#2f8f8f',diff:'d-mid',diffTxt:'REPAIR',blurb:'Repair shop, has a parts guy already',
+   biz:'a phone repair shop',hintItem:'11a',coldness:22,patience:6,hot:60,objections:['competitor','price'],goal:{key:'list',txt:'agree to receive your parts-grade list'},
+   persona:'practical repair-shop owner who already has a parts supplier and only cares about cheap ASIS/parts stock'},
+  {id:'ben',name:'Ben · NorthCorp IT',color:'#556677',diff:'d-hard',diffTxt:'CORPORATE',blurb:'IT asset manager, compliance-minded',
+   biz:'a corporate IT department',hintItem:'15p',coldness:18,patience:5,hot:66,objections:['trust'],goal:{key:'call',txt:'agree to a quick intro call'},
+   persona:'formal corporate IT asset manager who buys refurb for staff fleets and cares about data erasure, warranty and proper invoicing'},
+  {id:'aisha',name:'Aisha · New Reseller',color:'#b0568a',diff:'d-easy',diffTxt:'COLD BRUSH',blurb:'Flat "not interested" at first',
+   biz:'a small online reseller',hintItem:'se',coldness:20,patience:6,hot:52,objections:['notinterested'],goal:{key:'group',txt:'agree to join your trading group'},
+   persona:'a cautious new reseller who reflexively says "not interested" but warms up to a low-pressure, genuinely helpful approach'},
+  {id:'kwame',name:'Kwame · Accra Mobile',color:'#3a9d5c',diff:'d-hard',diffTxt:'TOUGH',blurb:'Loyal to supplier AND wary of scams',
+   biz:'a mobile shop in Accra',hintItem:'13p',coldness:16,patience:7,hot:68,objections:['competitor','trust'],goal:{key:'trial',txt:'agree to a small trial order'},
+   persona:'seasoned but guarded shop owner who is loyal to his current supplier and also very alert to scams — the hardest to win'},
 ];
 
 /* ===================== TEMPLATES ===================== */
@@ -554,6 +609,7 @@ const LEARN=[
 
 /* ===================== STATE ===================== */
 let buyer,item,state,rounds,buyerCounter,coverage,log,closedPrice,aiHistory,lastPrice;
+let warmth,clearedSet,turns,oFlags;
 const session=Object.assign({deals:0,margin:0,scores:[]}, store.get('session')||{});
 const $=id=>document.getElementById(id);
 const now=()=>{const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')};
@@ -569,8 +625,13 @@ function showTab(t){
 }
 
 /* ===================== TRADE: SETUP ===================== */
+function curList(){return MODE==='inbound'?BUYERS:PROSPECTS}
+function setMode(m){MODE=m;
+  $('m-inbound').classList.toggle('on',m==='inbound');$('m-outreach').classList.toggle('on',m==='outreach');
+  renderScenarios();loadBuyer(curList()[0].id);}
 function renderScenarios(){
-  $('scenarios').innerHTML=BUYERS.map(b=>`
+  $('pickLbl').textContent=MODE==='inbound'?'Pick a buyer':'Pick a prospect';
+  $('scenarios').innerHTML=curList().map(b=>`
     <div class="scenario" data-id="${b.id}" onclick="loadBuyer('${b.id}')">
       <div class="av" style="background:${b.color}">${b.name[0]}</div>
       <div class="meta"><strong>${b.name.split(' · ')[0]}<span class="diff ${b.diff}">${b.diffTxt}</span></strong>
@@ -585,16 +646,21 @@ function renderLots(){
       <button onclick="quoteLot('${i.id}')">Quote this →</button></div></div>`;}).join('');
 }
 function loadBuyer(id){
-  buyer=BUYERS.find(b=>b.id===id); item=invById(buyer.itemId);
-  state='open';rounds=0;buyerCounter=null;closedPrice=null;lastPrice=null;buyer._oversold=false;
+  buyer=curList().find(b=>b.id===id); item=invById(buyer.itemId||buyer.hintItem||'13');
+  state='open';rounds=0;buyerCounter=null;closedPrice=null;lastPrice=null;buyer._oversold=false;buyer._active=null;
   coverage={grade:false,bh:false,spec:false,imei:false,lock:false,moq:false,mdm:false,vat:false,cycle:false,wifi:false,knox:false};
+  warmth=buyer.coldness||20;clearedSet=new Set();turns=0;oFlags={personalized:false,credible:false,value:false,cta:false,pushy:false};
   log=[];aiHistory=[];
   document.querySelectorAll('.scenario').forEach(s=>s.classList.toggle('active',s.dataset.id===id));
   $('h-av').textContent=buyer.name[0];$('h-av').style.background=buyer.color;
   $('h-name').textContent=buyer.name;$('h-status').textContent='online';
   $('messages').innerHTML='';addDay();
-  addSys(`New enquiry — you are SELLING to ${buyer.name}. Quote from stock, confirm the specs, hold your margin.`);
-  incoming(buyer.opener);
+  if(MODE==='inbound'){
+    addSys(`New enquiry — you are SELLING to ${buyer.name}. Quote from stock, confirm the specs, hold your margin.`);
+    incoming(buyer.opener);
+  }else{
+    addSys(`Cold outreach — you're messaging ${buyer.name} for the first time. They didn't ask to be contacted. Open well and win them over. Goal: ${buyer.goal.txt}.`);
+  }
   $('send').disabled=false;$('input').value='';renderChips();
 }
 function restartDeal(){ if(buyer)loadBuyer(buyer.id); }
@@ -612,10 +678,26 @@ function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 function typing(on){$('typing').classList.toggle('show',on);if(on)scroll()}
 
 /* ===================== CHIPS + DRAWER ===================== */
-function renderChips(){$('chips').innerHTML=`
+function renderChips(){
+  if(MODE==='inbound'){$('chips').innerHTML=`
   <span class="chip" onclick="openDrawer()">📦 Quote from stock</span>
   <span class="chip" onclick="insertConfirm()">✅ Confirm specs</span>
   <span class="chip" onclick="insert('MOQ met. Payment 50% deposit by TT, balance on collection. Sold under margin VAT, full invoice provided.')">💳 Terms</span>`;}
+  else{$('chips').innerHTML=`
+  <span class="chip" onclick="insertPersonalise()">📇 Personalise</span>
+  <span class="chip" onclick="insertCredibility()">🛡️ Credibility</span>
+  <span class="chip" onclick="insertValue()">🎁 Offer value</span>
+  <span class="chip" onclick="insertCTA()">👉 Soft CTA</span>`;}
+}
+function insertPersonalise(){insert(`Hi ${buyer.name.split(' ')[0]}, I run trading at Mobi Hub — noticed you're in ${buyer.biz||'the trade'} and thought I'd reach out directly.`)}
+function insertCredibility(){insert(`Quick context: we're Mobi Hub — we trade refurbished Apple & Samsung wholesale across Europe. Verified traders only, full invoices and IMEI reports on every lot.`)}
+function insertValue(){insert(`No hard sell — happy to send our live price list so you can compare against your current numbers. No obligation.`)}
+function insertCTA(){const g=buyer.goal&&buyer.goal.key;const m={
+  list:`Can I add you to our daily stock list? No spam — just clean deals, and you can drop off anytime.`,
+  group:`Want me to add you to our B2B trading group? Verified traders, daily WTS/WTB — see if it's useful, no pressure.`,
+  trial:`How about we start small — one trial lot with an IMEI report so you can check us out before anything bigger?`,
+  call:`Would a quick 10-min call this week work, just to see if we're a fit? No obligation.`};
+  insert(m[g]||`Happy to send more whenever suits you.`)}
 function openDrawer(){$('drawer').classList.add('show')}
 function closeDrawer(){$('drawer').classList.remove('show')}
 function insert(t){const i=$('input');i.value=(i.value?i.value.trim()+' ':'')+t;i.focus();autosize()}
@@ -658,7 +740,7 @@ async function sendMsg(){
   await wait(650+Math.random()*650);
   let handled=false;
   if($('aiToggle').checked){const ai=await aiReply();if(ai){typing(false);handled=true;applyReply(ai.text,ai.stateOut,ai.price)}}
-  if(!handled){typing(false);scriptedReply(txt)}
+  if(!handled){typing(false);(MODE==='inbound'?scriptedReply:outreachReply)(txt)}
   if(state!=='closed'&&state!=='walked')$('send').disabled=false;
 }
 function applyReply(text,stateOut,price){
@@ -724,8 +806,92 @@ function reply(kind,price,need,belowCost,traderPrice){
 }
 function finalizeSoon(win){$('send').disabled=true;setTimeout(()=>finalize(win),650)}
 
+/* ===================== OUTREACH ENGINE ===================== */
+function analyzeOutreach(txt){const t=txt.toLowerCase(),len=txt.length,fn=buyer.name.split(' ')[0].toLowerCase();
+  const personalized=/your (shop|store|business|customers|stock|market|clients?|fleet)|\b(retail|repair|reseller|wholesale|store|shop)\b/i.test(txt)||t.includes(fn)||(buyer.biz&&t.includes(buyer.biz.split(' ').pop()));
+  const credible=/(mobi[- ]?hub|based in|years|trusted|verified|references?|registered|company|invoice|track record|escrow|imei report|we'?re|we are)/i.test(txt);
+  const value=/(price list|stock list|wts|offer|deal|competitive|sample|no obligation|compare|share|whenever you|free|\blist\b)/i.test(txt)||/\$\s?\d|\d{2,4}\s?(usd|each|\/unit)/i.test(txt);
+  const pushy=/(buy now|order now|send (the )?(deposit|payment)|pay (now|today)|act fast|limited time|last chance|!!!|100% guarantee|cheapest in the world)/i.test(txt)||(txt===txt.toUpperCase()&&len>18);
+  const cta=/(can i add you|shall i send|want me to send|happy to send|send you (my|our|the)|add you to|join (our|the)|quick (call|chat)|10.?min|book a call|try (a|one|a small)|trial (order|lot)|start (with )?small|no obligation|shall we|would .* work)/i.test(txt);
+  return{personalized,credible,value,pushy,cta,wall:len>320,short:len<210};}
+function outreachReply(txt){
+  turns++;const a=analyzeOutreach(txt);
+  if(a.personalized)oFlags.personalized=true;if(a.credible)oFlags.credible=true;
+  if(a.value)oFlags.value=true;if(a.cta)oFlags.cta=true;if(a.pushy)oFlags.pushy=true;
+  let d=0;if(a.personalized)d+=8;if(a.credible)d+=10;if(a.value)d+=9;if(a.wall)d-=6;if(a.short&&!a.wall)d+=3;if(a.pushy)d-=22;
+  let clearedNow=null;
+  for(const o of buyer.objections){if(!clearedSet.has(o)&&OBJ[o].clear.test(txt)){clearedSet.add(o);d+=14;clearedNow=o;}}
+  warmth=Math.max(0,Math.min(100,warmth+d));
+  const allCleared=buyer.objections.every(o=>clearedSet.has(o));
+  if(a.pushy&&warmth<28){incoming(pick(["Whoa, you're pushing way too hard — that's exactly what scammers do. Not interested.","Hard pass. Far too salesy for me."]));return finalizeSoon(false);}
+  if(turns===1){
+    if((!a.personalized&&!a.value)||a.pushy){const o=buyer.objections[0];
+      incoming(pick(["Who is this? I didn't ask to be contacted.","Sorry, who are you? I get ten of these a day."])+(o?' '+OBJ[o].ask:''));buyer._active=o;return;}
+    const o=buyer.objections[0];
+    incoming(pick(["Okay, you've got a second. ","Alright, I'm listening. "])+OBJ[o].ask);buyer._active=o;return;
+  }
+  if(clearedNow){
+    const next=buyer.objections.find(o=>!clearedSet.has(o));
+    if(next){incoming(OBJ[clearedNow].done+' '+OBJ[next].ask);buyer._active=next;return;}
+    if(a.cta&&warmth>=buyer.hot)return winOutreach();
+    incoming(OBJ[clearedNow].done+' '+pick(["So what are you proposing exactly?","Okay — what's the next step then?"]));return;
+  }
+  if(!allCleared){
+    const act=buyer._active||buyer.objections.find(o=>!clearedSet.has(o));
+    if(turns>=buyer.patience){incoming(pick(["Look, you still haven't given me a real reason. I'll pass for now.","We're going round in circles. Ping me another time."]));return finalizeSoon(false);}
+    incoming(pick(["Right, but ","Still — ","I hear you, but "])+OBJ[act].ask.charAt(0).toLowerCase()+OBJ[act].ask.slice(1));return;
+  }
+  if(a.cta&&warmth>=buyer.hot)return winOutreach();
+  if(a.cta&&warmth<buyer.hot){incoming(pick(["Maybe — send me a bit more and let's see.","Not quite sold yet. What actually makes you different?"]));return;}
+  if(turns>=buyer.patience){incoming("Anyway, I've got to run. Maybe another time.");return finalizeSoon(false);}
+  incoming(pick(["Okay, you've got my attention. So what's the offer?","Alright — so what do you want to do next?"]));
+}
+function winOutreach(){const g=buyer.goal.key;
+  const m={list:"Alright, go on then — add me to your list. Let's see what you've got 👍",
+    group:"Okay, add me to the group. Let's see if it's worth it.",
+    trial:"Fine — send me one small trial lot with an IMEI report, and we'll take it from there 🤝",
+    call:"Sure, set up a quick call this week. Send me a couple of times."};
+  incoming(m[g]||"Okay, let's do it 👍");return finalizeSoon(true);}
+function setKpi(l1,v1,l2,v2,l3,v3){$('k-l1').textContent=l1;$('k-units').textContent=v1;$('k-l2').textContent=l2;$('k-price').textContent=v2;$('k-l3').textContent=l3;$('k-margin').textContent=v3;$('k-margin').style.color='var(--ink)';}
+function finalizeOutreach(win){
+  let score=0;const coach=[];
+  let q=0;if(oFlags.personalized)q+=12;if(oFlags.credible)q+=10;if(!oFlags.pushy)q+=8;score+=Math.min(30,q);
+  const oc=buyer.objections.length?clearedSet.size/buyer.objections.length:1;score+=Math.round(oc*25);
+  let vt=0;if(oFlags.value)vt+=13;if(!oFlags.pushy)vt+=7;score+=Math.min(25,vt);
+  if(win)score+=20;score=Math.max(0,Math.min(100,score));
+  if(oFlags.personalized)coach.push(['good',"Personalised opening — that's what gets a cold prospect to actually reply."]);
+  else coach.push(['bad',"Your opener was generic. Lead with something specific about <b>their</b> business, not a blast everyone gets."]);
+  if(oFlags.pushy)coach.push(['bad',"You came on too strong / too salesy. Cold clients read that as a scam signal — earn trust before you ask."]);
+  buyer.objections.forEach(o=>{if(!clearedSet.has(o))coach.push(['bad',`You never got past their "<b>${OBJ_LABEL[o]}</b>" wall — that was the real thing to solve.`]);});
+  if(oFlags.credible)coach.push(['good',"You established who Mobi Hub is and why you're credible — essential with a stranger."]);
+  else coach.push(['info',"Say who you are early (Mobi Hub, verified, invoices, IMEI reports). Strangers need a reason to trust you."]);
+  if(!oFlags.value)coach.push(['info','Lead with value — a price list, a specific competitive deal — not "buy from me".']);
+  if(win)coach.push(['good',"You landed a low-friction next step and won them. That's the whole game in cold outreach."]);
+  else coach.push(['info',"Aim for a small yes (see the list / a trial / a quick call), not the big sale on message one."]);
+  if(win)session.deals++;session.scores.push(score);updateStats();persist();
+  const good=score>=70,mid=score>=45,col=win?(good?'#14785c':mid?'#d98a1f':'#b04a3a'):'#b04a3a';
+  $('v-label').textContent=win?'CLIENT WON':'CLIENT LOST';$('v-label').style.color=col;
+  $('v-title').textContent=win?(good?'Won them over 🤝':'Won — but scrappy'):'They brushed you off 🚶';
+  $('ring').style.background=`conic-gradient(${col} ${score*3.6}deg,#e6e1d7 0)`;
+  $('ring').innerHTML=`<div style="width:90px;height:90px;background:var(--cream);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center"><b style="font-family:'Bricolage Grotesque',sans-serif;font-size:32px;color:${col}">${score}</b><small style="font-size:10px;color:#7a857f">/ 100</small></div>`;
+  setKpi('WARMTH',warmth,'TURNS',turns,'OUTCOME',win?'WON':'LOST');
+  $('coach').innerHTML=coach.map(c=>`<div class="${c[0]}">${c[1]}</div>`).join('');
+  $('modal').classList.add('show');
+}
+
 /* ===================== AI BACKENDS ===================== */
 function buyerSystem(){
+  if(MODE==='outreach'){
+    return `You are role-playing a hard-to-win PROSPECTIVE CLIENT named "${buyer.name}" being cold-contacted on WhatsApp by a device-trading sales rep (the user), from a company called Mobi Hub.
+You are: ${buyer.persona}.
+You did NOT ask to be contacted, so start guarded. Your real objection(s): ${buyer.objections.map(o=>OBJ[o].ask).join(' / ')}.
+Behave like a real, busy client:
+- If their opener is generic spam or pushy/salesy, brush them off or say you're not interested.
+- Raise your objection(s). Only warm up if the rep is specific about your business, credible (says who they are, offers references / verification / invoices / IMEI reports), leads with value (a price list, a specific deal) not just "buy from me", and is NOT pushy.
+- Agree to ${buyer.goal.txt} ONLY once you are genuinely won over. Politely end / ghost if they're pushy, salesy, or waste your time.
+- Reply ONLY as the client, short WhatsApp style (max ~35 words), realistic tone.
+- ALWAYS end with a hidden tag on its own line: [[STATE:negotiating|agreed|walked;PRICE:0]]  (agreed = you're won over; walked = brushed them off for good)`;
+  }
   return `You are role-playing a B2B refurbished-device BUYER named "${buyer.name}" haggling over WhatsApp with a seller (the user).
 You already opened with: "${buyer.opener}"
 Deal: you want to BUY ${buyer.qty}x ${item.name} (${item.grade}, ${item.spec}).
@@ -814,6 +980,7 @@ function labelOf(k){return {grade:'grade / faults',bh:'battery health',spec:'spe
   wifi:'WiFi vs Cellular',knox:'Knox / chipset'}[k]||k}
 function finalize(win){
   state=win?'closed':'walked';$('send').disabled=true;$('chips').innerHTML='';
+  if(MODE==='outreach')return finalizeOutreach(win);
   const price=win?closedPrice:0,units=buyer.qty,marginU=win?(price-item.cost):0,marginTotal=marginU*units;
   let score=0;const coach=[];const keys=[...new Set([...buyer.needs,'imei','moq'])];
   if(win){
@@ -840,15 +1007,15 @@ function finalize(win){
   $('v-title').textContent=win?(good?'Clean trade 🤝':mid?'Closed — with leaks':'Closed, but money left on the table'):'They walked 🚶';
   $('ring').style.background=`conic-gradient(${col} ${score*3.6}deg,#e6e1d7 0)`;
   $('ring').innerHTML=`<div style="width:90px;height:90px;background:var(--cream);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center"><b style="font-family:'Bricolage Grotesque',sans-serif;font-size:32px;color:${col}">${score}</b><small style="font-size:10px;color:#7a857f">/ 100</small></div>`;
-  $('k-units').textContent=win?units:'0';$('k-price').textContent=win?('$'+price):'—';
-  $('k-margin').textContent=win?('$'+marginTotal.toLocaleString()):'$0';$('k-margin').style.color=marginTotal<0?'#b04a3a':'var(--ink)';
+  setKpi('UNITS',win?units:'0','PRICE/UNIT',win?('$'+price):'—','MARGIN',win?('$'+marginTotal.toLocaleString()):'$0');
+  $('k-margin').style.color=marginTotal<0?'#b04a3a':'var(--ink)';
   $('coach').innerHTML=coach.map(c=>`<div class="${c[0]}">${c[1]}</div>`).join('');
   $('modal').classList.add('show');
 }
 function closeModal(){$('modal').classList.remove('show')}
 function updateStats(){$('s-deals').textContent=session.deals;$('s-margin').textContent='$'+session.margin.toLocaleString();
   $('s-score').textContent=session.scores.length?Math.round(session.scores.reduce((a,b)=>a+b,0)/session.scores.length):'–';}
-function nextDeal(){closeModal();const others=BUYERS.filter(b=>b.id!==buyer.id);loadBuyer(others[Math.floor(Math.random()*others.length)].id);}
+function nextDeal(){closeModal();const others=curList().filter(b=>b.id!==buyer.id);loadBuyer(others[Math.floor(Math.random()*others.length)].id);}
 
 /* ===================== DOWNLOAD CHAT ===================== */
 function downloadChat(){
